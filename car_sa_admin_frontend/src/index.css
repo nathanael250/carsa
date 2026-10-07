@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-dark: #2F4858;
+  --color-primary-orange-light: #FEA14C;
+  --color-primary-orange-dark: #FE8A21;
+}
+
+@layer base {
+body {
+    @apply font-sans antialiased;
+}
+  
+  #root {
+    @apply w-full min-h-screen;
+  }
+}
