@@ -111,6 +111,7 @@ See `docs/garage-admin-activities.md` for the garage admin activity scope.
 - `TRANSPIP_COMMON_API_KEY` (required for service payment collections)
 - `TRANSPIP_TENANT_API_KEY` (required for service payment collections)
 - `TRANSPIP_PAYMENT_TIMEOUT_MS` (optional; defaults to `15000`)
+- `TRANSPIP_WEBHOOK_SECRET` (optional; if set, TransPip webhooks must send it as `x-webhook-secret`, `x-transpip-webhook-secret`, or `?token=...`)
 - `DB_DIALECT` (default `mysql`)
 - `DB_HOST`
 - `DB_PORT` (default `3306`)

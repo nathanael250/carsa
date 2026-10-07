@@ -756,4 +756,38 @@ Service.checkPaymentStatus = async ({params, user}) => {
     };
 };
 
+Service.applyPaymentWebhook = async (payload) => {
+    const collectionId = payload?.collectionId || payload?.collection_id;
+    const status = getPaymentStatus(payload);
+
+    if (!collectionId) {
+        throw createHttpError('collectionId is required', 400);
+    }
+    if (!status || !TERMINAL_PAYMENT_STATUSES.includes(status)) {
+        throw createHttpError('Webhook status must be SUCCESS or FAILED', 400);
+    }
+
+    const service = await Service.findOne({
+        where: {payment_collection_id: collectionId},
+    });
+
+    if (!service) {
+        return {
+            matched: false,
+            collectionId,
+            paymentStatus: status,
+        };
+    }
+
+    updateServicePaymentFromStatus(service, payload);
+    await service.save();
+
+    return {
+        matched: true,
+        serviceId: service.id,
+        collectionId,
+        paymentStatus: service.payment_status,
+    };
+};
+
 module.exports = Service;

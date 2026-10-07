@@ -33,6 +33,7 @@ require('./models/BusinessDocument');
 
 
 const masterRoutes = require('./routes/master.routes');
+const paymentWebhookRoutes = require('./routes/paymentWebhook.routes');
 const path = require('path');
 
 app.get('/health', (req, res) => {
@@ -41,6 +42,9 @@ app.get('/health', (req, res) => {
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Payment provider callbacks
+app.use('/payments', paymentWebhookRoutes);
 
 // Master command endpoint (single controller)
 app.use('/', masterRoutes);
