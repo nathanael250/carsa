@@ -38,6 +38,8 @@ type DashboardStats = {
   };
 };
 
+type MultiGarageOwner = DashboardStats['multiGarageOwners'][number];
+
 type GarageDashboardStats = {
   cars_serviced: number;
   unique_clients: number;
@@ -512,20 +514,14 @@ const Dashboard = () => {
         .slice(0, 6);
       const ownerGarageMap = new Map<
         number | string,
-        {
-          id: number | string;
-          name: string;
-          email?: string;
-          garageCount: number;
-          garageNames: string[];
-        }
+        MultiGarageOwner
       >();
 
       garages.forEach((garage: any) => {
         const ownerId = garage.owner?.id ?? garage.owner_user_id;
         if (!ownerId) return;
 
-        const existing = ownerGarageMap.get(ownerId) || {
+        const existing: MultiGarageOwner = ownerGarageMap.get(ownerId) || {
           id: ownerId,
           name: garage.owner?.name || 'Unknown owner',
           email: garage.owner?.email || '',
