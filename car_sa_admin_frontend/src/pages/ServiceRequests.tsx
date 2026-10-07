@@ -11,6 +11,13 @@ interface ServiceItem {
   estimated_cost: string | number | null;
   actual_cost: string | number | null;
   mileage_at_service: number | null;
+  payment_collection_id?: string | null;
+  payment_status?: 'QUEUED' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | null;
+  payment_phone?: string | null;
+  payment_amount?: number | null;
+  payment_provider_ref?: string | null;
+  payment_fail_reason?: string | null;
+  paid_at?: string | null;
   created_at: string;
   updated_at: string;
   vehicle?: {
@@ -67,6 +74,13 @@ const ServiceRequests = () => {
     actual_cost: '',
     mileage_at_service: '',
   });
+  const [paymentForm, setPaymentForm] = useState({
+    phone: '',
+    amount: '',
+  });
+  const [paymentMessage, setPaymentMessage] = useState('');
+  const [paymentPolling, setPaymentPolling] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   useEffect(() => {
     fetchServices();
@@ -74,6 +88,12 @@ const ServiceRequests = () => {
 
   useEffect(() => {
     fetchMechanics();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setPaymentPolling(false);
+    };
   }, []);
 
   const fetchMechanics = async () => {
@@ -172,17 +192,128 @@ const ServiceRequests = () => {
       actual_cost: service.actual_cost?.toString() || '',
       mileage_at_service: service.mileage_at_service?.toString() || '',
     });
+    setPaymentForm({
+      phone: service.payment_phone || service.vehicle?.owner?.phone || '',
+      amount: (service.payment_amount || service.actual_cost || service.estimated_cost || '').toString(),
+    });
+    setPaymentMessage(service.payment_status ? `Payment status: ${service.payment_status}` : '');
+    setPaymentPolling(false);
+    setPaymentProcessing(false);
     setShowDetails(true);
   };
 
   const closeDetails = () => {
     setShowDetails(false);
     setSelectedService(null);
+    setPaymentPolling(false);
+    setPaymentMessage('');
+  };
+
+  const serviceHasConfirmedPayment = selectedService?.payment_status === 'SUCCESS';
+
+  const refreshSelectedServicePayment = (service: ServiceItem) => {
+    setSelectedService(service);
+    setServices((prev) => prev.map((item) => (item.id === service.id ? service : item)));
+  };
+
+  const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  const pollPaymentStatus = async (serviceId: number) => {
+    setPaymentPolling(true);
+    setPaymentMessage('Waiting for customer confirmation...');
+
+    const startedAt = Date.now();
+    const timeoutMs = 120000;
+
+    await wait(6000);
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const response = await api.checkServicePaymentStatus(serviceId);
+      if (response.error) {
+        setPaymentMessage(response.error);
+        setPaymentPolling(false);
+        return;
+      }
+
+      const paymentStatus = response.data?.paymentStatus;
+      if (response.data?.service) {
+        refreshSelectedServicePayment(response.data.service);
+      }
+
+      if (paymentStatus === 'SUCCESS') {
+        setPaymentMessage('Payment confirmed. You can now complete the service.');
+        setPaymentPolling(false);
+        return;
+      }
+
+      if (paymentStatus === 'FAILED') {
+        setPaymentMessage(response.data?.failReason || 'Payment failed. Ask the customer to try again.');
+        setPaymentPolling(false);
+        return;
+      }
+
+      setPaymentMessage(`Payment ${paymentStatus || 'PROCESSING'}. Checking again soon...`);
+      await wait(6000);
+    }
+
+    setPaymentMessage('Payment is still processing. You can check again later with the same collection.');
+    setPaymentPolling(false);
+  };
+
+  const handleStartPayment = async () => {
+    if (!selectedService) return;
+    setError(null);
+    setPaymentMessage('');
+
+    const amount = Number(paymentForm.amount);
+    if (!paymentForm.phone.trim()) {
+      setPaymentMessage('Enter the customer Mobile Money phone number.');
+      return;
+    }
+    if (!Number.isInteger(amount) || amount < 100) {
+      setPaymentMessage('Enter a whole amount of at least 100 RWF.');
+      return;
+    }
+
+    setPaymentProcessing(true);
+    try {
+      const response = await api.initiateServicePayment(selectedService.id, {
+        phone: paymentForm.phone.trim(),
+        amount,
+      });
+
+      if (response.error) {
+        setPaymentMessage(response.error);
+        return;
+      }
+
+      if (response.data?.service) {
+        refreshSelectedServicePayment(response.data.service);
+      }
+      setPaymentMessage(`Payment ${response.data?.paymentStatus || 'PROCESSING'}. Ask the customer to approve the prompt.`);
+      await pollPaymentStatus(selectedService.id);
+    } catch (err) {
+      setPaymentMessage('Failed to start payment collection.');
+      console.error(err);
+    } finally {
+      setPaymentProcessing(false);
+    }
+  };
+
+  const handleCheckPayment = async () => {
+    if (!selectedService) return;
+    await pollPaymentStatus(selectedService.id);
   };
 
   const handleUpdate = async () => {
     if (!selectedService) return;
     setError(null);
+
+    if (updateForm.status === 'completed' && !serviceHasConfirmedPayment) {
+      setPaymentMessage('Complete the payment first. The service can only be completed after payment succeeds.');
+      return;
+    }
+
     try {
       const payload: any = {
         status: updateForm.status || undefined,
@@ -481,6 +612,97 @@ const ServiceRequests = () => {
                 </div>
               </div>
 
+              {(updateForm.status === 'completed' || selectedService.payment_collection_id) && (
+                <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">Payment Required</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Service completion is enabled only after payment reaches SUCCESS.
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                        selectedService.payment_status === 'SUCCESS'
+                          ? 'bg-green-100 text-green-700'
+                          : selectedService.payment_status === 'FAILED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {selectedService.payment_status || 'NOT STARTED'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">MoMo Phone</label>
+                      <input
+                        type="tel"
+                        value={paymentForm.phone}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, phone: e.target.value })}
+                        disabled={paymentPolling || paymentProcessing || selectedService.payment_status === 'SUCCESS'}
+                        placeholder="0781111111"
+                        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEA14C] focus:border-transparent disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Amount (RWF)</label>
+                      <input
+                        type="number"
+                        value={paymentForm.amount}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                        disabled={paymentPolling || paymentProcessing || selectedService.payment_status === 'SUCCESS'}
+                        min={100}
+                        className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEA14C] focus:border-transparent disabled:bg-gray-100"
+                      />
+                    </div>
+                  </div>
+
+                  {selectedService.payment_collection_id && (
+                    <p className="text-xs text-gray-500">
+                      Collection: {selectedService.payment_collection_id}
+                      {selectedService.payment_provider_ref ? ` • Provider ref: ${selectedService.payment_provider_ref}` : ''}
+                    </p>
+                  )}
+
+                  {paymentMessage && (
+                    <p
+                      className={`text-sm ${
+                        selectedService.payment_status === 'SUCCESS'
+                          ? 'text-green-700'
+                          : selectedService.payment_status === 'FAILED'
+                            ? 'text-red-700'
+                            : 'text-amber-700'
+                      }`}
+                    >
+                      {paymentMessage}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleStartPayment}
+                      disabled={paymentPolling || paymentProcessing || selectedService.payment_status === 'SUCCESS'}
+                      className="px-4 py-2 text-sm bg-[#2F4858] text-white rounded-lg hover:bg-[#263b48] disabled:opacity-60"
+                    >
+                      {paymentProcessing ? 'Starting...' : selectedService.payment_collection_id ? 'Restart Payment' : 'Start Payment'}
+                    </button>
+                    {selectedService.payment_collection_id && selectedService.payment_status !== 'SUCCESS' && (
+                      <button
+                        type="button"
+                        onClick={handleCheckPayment}
+                        disabled={paymentPolling || paymentProcessing}
+                        className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-60"
+                      >
+                        {paymentPolling ? 'Checking...' : 'Check Status'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Notes</label>
                 <textarea
@@ -500,7 +722,8 @@ const ServiceRequests = () => {
                 </button>
                 <button
                   onClick={handleUpdate}
-                  className="px-4 py-2 text-sm bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21]"
+                  disabled={paymentPolling || paymentProcessing || (updateForm.status === 'completed' && !serviceHasConfirmedPayment)}
+                  className="px-4 py-2 text-sm bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21] disabled:opacity-60"
                 >
                   Save Changes
                 </button>

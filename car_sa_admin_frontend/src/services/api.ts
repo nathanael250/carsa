@@ -607,6 +607,29 @@ class ApiService {
     });
   }
 
+  async initiateServicePayment(id: number, payload: { phone: string; amount: number | string }) {
+    return this.requestCommand<{
+      service: any;
+      collectionId: string;
+      paymentStatus: string;
+    }>('INIT_SERVICE_PAYMENT', {
+      body: payload,
+      params: { id },
+    });
+  }
+
+  async checkServicePaymentStatus(id: number) {
+    return this.requestCommand<{
+      service: any;
+      collectionId: string;
+      paymentStatus: string;
+      providerRef?: string;
+      failReason?: string | null;
+    }>('CHECK_SERVICE_PAYMENT_STATUS', {
+      params: { id },
+    });
+  }
+
   async getNotifications(params?: { read?: boolean; type?: string; limit?: number; offset?: number }) {
     return this.requestCommand<{
       notifications: any[];

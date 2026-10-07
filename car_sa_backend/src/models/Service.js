@@ -7,6 +7,7 @@ const ServiceCatalog = require('./ServiceCatalog');
 const OilProduct = require('./OilProduct');
 const {createHttpError} = require('../utils/httpError');
 const {resolveAccessibleGarageIds} = require('../utils/garageAccess');
+const {initiateCollection, checkCollectionStatus} = require('../utils/transpipPayments');
 
 const Service = sequelize.define('Service', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
@@ -17,7 +18,7 @@ const Service = sequelize.define('Service', {
     status: {
         type: DataTypes.ENUM('pending', 'in_progress', 'completed', 'cancelled'),
         allowNull: false,
-        defaultValue: 'completed'
+        defaultValue: 'in_progress'
     },
     notes: {type: DataTypes.TEXT, allowNull: true}, // Additional notes from garage owner
     scheduled_date: {type: DataTypes.DATE, allowNull: true}, // When the service is scheduled
@@ -28,6 +29,13 @@ const Service = sequelize.define('Service', {
     mileage_at_service: {type: DataTypes.INTEGER, allowNull: true}, // Vehicle mileage when service was performed
     next_service_mileage: {type: DataTypes.INTEGER, allowNull: true}, // Worker-entered mileage for the next service reminder
     oil_product_id: {type: DataTypes.INTEGER, allowNull: true},
+    payment_collection_id: {type: DataTypes.STRING(100), allowNull: true},
+    payment_status: {type: DataTypes.ENUM('QUEUED', 'PROCESSING', 'SUCCESS', 'FAILED'), allowNull: true},
+    payment_phone: {type: DataTypes.STRING(30), allowNull: true},
+    payment_amount: {type: DataTypes.INTEGER, allowNull: true},
+    payment_provider_ref: {type: DataTypes.STRING(100), allowNull: true},
+    payment_fail_reason: {type: DataTypes.TEXT, allowNull: true},
+    paid_at: {type: DataTypes.DATE, allowNull: true},
 }, {
     tableName: 'services',
     underscored: true,
@@ -50,6 +58,43 @@ const serviceCatalogAttributes = [
 ];
 
 const oilProductAttributes = ['id', 'name', 'brand', 'grade', 'category', 'description'];
+const TERMINAL_PAYMENT_STATUSES = ['SUCCESS', 'FAILED'];
+
+function normalizePaymentStatus(status) {
+    return status ? String(status).trim().toUpperCase() : null;
+}
+
+function getPaymentCollectionId(data) {
+    return data?.collectionId || data?.collection_id || data?.id || data?.data?.collectionId || data?.data?.collection_id;
+}
+
+function getPaymentStatus(data) {
+    return normalizePaymentStatus(data?.status || data?.data?.status || data?.collection?.status);
+}
+
+function updateServicePaymentFromStatus(service, data) {
+    const status = getPaymentStatus(data);
+    if (status) {
+        service.payment_status = status;
+    }
+    service.payment_provider_ref = data?.providerRef || data?.provider_ref || data?.data?.providerRef || data?.data?.provider_ref || service.payment_provider_ref;
+    service.payment_fail_reason = data?.failReason || data?.fail_reason || data?.data?.failReason || data?.data?.fail_reason || service.payment_fail_reason;
+    if (status === 'SUCCESS' && !service.paid_at) {
+        service.paid_at = new Date();
+    }
+}
+
+async function assertCanManageServicePayment(service, user) {
+    if (user.role === 'car_owner') {
+        throw createHttpError('Car owners cannot manage service payments. Please contact the garage.', 403);
+    }
+    if (user.role === 'garage_admin' || user.role === 'service_technician') {
+        const accessibleGarageIds = await resolveAccessibleGarageIds(user);
+        if (!accessibleGarageIds.includes(Number(service.garage_id))) {
+            throw createHttpError('You can only manage payments for your garage', 403);
+        }
+    }
+}
 
 function resolveServiceKind(serviceCatalog) {
     const explicitKind = serviceCatalog?.service_kind;
@@ -152,11 +197,11 @@ Service.createService = async ({body, user}) => {
         garage_id: resolvedGarageId,
         service_catalog_id,
         performed_by_user_id: user.id,
-        status: 'completed',
+        status: 'in_progress',
         notes,
         scheduled_date: scheduled_date ? new Date(scheduled_date) : null,
         started_at: now,
-        completed_at: now,
+        completed_at: null,
         estimated_cost,
         mileage_at_service,
         next_service_mileage,
@@ -168,8 +213,8 @@ Service.createService = async ({body, user}) => {
         await Notification.createAndDispatch({
             user_id: vehicle.owner_id,
             type: 'service_request',
-            title: 'Service Completed',
-            message: `${garage.name} completed ${serviceCatalog.name} for your vehicle (${vehicle.license_plate}).`,
+            title: 'Service Started',
+            message: `${garage.name} started ${serviceCatalog.name} for your vehicle (${vehicle.license_plate}).`,
             read: false,
             related_entity_type: 'service',
             related_entity_id: service.id,
@@ -180,7 +225,7 @@ Service.createService = async ({body, user}) => {
                 vehicle_id: vehicle.id,
                 estimated_cost: estimated_cost,
                 scheduled_date: scheduled_date,
-                completed_at: now,
+                started_at: now,
                 mileage_at_service,
                 next_service_mileage,
                 oil_product: oilProduct ? {
@@ -203,7 +248,7 @@ Service.createService = async ({body, user}) => {
     return {
         status: 201,
         data: {
-            message: 'Service created as completed. Notification sent to car owner.',
+            message: 'Service created as in progress. Complete payment before marking it completed.',
             service: createdService,
         },
     };
@@ -542,6 +587,9 @@ Service.updateService = async ({params, body, user}) => {
     }
 
     if (status !== undefined) {
+        if (status === 'completed' && service.payment_status !== 'SUCCESS') {
+            throw createHttpError('Payment must be completed before this service can be marked completed.', 400);
+        }
         service.status = status;
         if (status === 'in_progress' && !service.started_at) {
             service.started_at = new Date();
@@ -586,6 +634,124 @@ Service.updateService = async ({params, body, user}) => {
         data: {
             message: 'Service updated successfully',
             service: updatedService,
+        },
+    };
+};
+
+Service.initiatePayment = async ({params, body, user}) => {
+    const {id} = params || {};
+    const {phone, amount} = body || {};
+
+    if (!phone) {
+        throw createHttpError('phone is required', 400);
+    }
+
+    const parsedAmount = Number(amount);
+    if (!Number.isInteger(parsedAmount) || parsedAmount < 100) {
+        throw createHttpError('amount must be a whole number of at least 100 RWF', 400);
+    }
+
+    const service = await Service.findByPk(id, {include: serviceInclude});
+    if (!service) {
+        throw createHttpError('Service not found', 404);
+    }
+
+    await assertCanManageServicePayment(service, user);
+
+    if (service.status === 'completed') {
+        throw createHttpError('This service is already completed', 400);
+    }
+
+    if (service.payment_status === 'SUCCESS') {
+        return {
+            status: 200,
+            data: {
+                message: 'Service payment is already confirmed',
+                service,
+                collectionId: service.payment_collection_id,
+                paymentStatus: service.payment_status,
+            },
+        };
+    }
+
+    if (service.payment_collection_id && !TERMINAL_PAYMENT_STATUSES.includes(service.payment_status)) {
+        return {
+            status: 200,
+            data: {
+                message: 'Service payment is already processing',
+                service,
+                collectionId: service.payment_collection_id,
+                paymentStatus: service.payment_status,
+            },
+        };
+    }
+
+    const idempotencyKey = `service-${service.id}-${Date.now()}`;
+    const owner = service.vehicle?.owner;
+    const response = await initiateCollection({
+        idempotencyKey,
+        userPseudoId: `service-${service.id}`,
+        phone,
+        amount: parsedAmount,
+        customerName: owner?.name,
+        customerEmail: owner?.email,
+    });
+
+    const collectionId = getPaymentCollectionId(response);
+    if (!collectionId) {
+        throw createHttpError('Payment provider did not return a collectionId', 502);
+    }
+
+    service.payment_collection_id = collectionId;
+    service.payment_status = getPaymentStatus(response) || 'PROCESSING';
+    service.payment_phone = phone;
+    service.payment_amount = parsedAmount;
+    service.payment_provider_ref = response.providerRef || response.provider_ref || service.payment_provider_ref;
+    service.payment_fail_reason = null;
+    service.actual_cost = parsedAmount;
+    await service.save();
+
+    const updatedService = await Service.findByPk(service.id, {include: serviceInclude});
+
+    return {
+        status: 200,
+        data: {
+            message: 'Payment collection initiated',
+            service: updatedService,
+            collectionId,
+            paymentStatus: service.payment_status,
+        },
+    };
+};
+
+Service.checkPaymentStatus = async ({params, user}) => {
+    const {id} = params || {};
+    const service = await Service.findByPk(id, {include: serviceInclude});
+    if (!service) {
+        throw createHttpError('Service not found', 404);
+    }
+
+    await assertCanManageServicePayment(service, user);
+
+    if (!service.payment_collection_id) {
+        throw createHttpError('No payment collection has been started for this service', 400);
+    }
+
+    const response = await checkCollectionStatus(service.payment_collection_id);
+    updateServicePaymentFromStatus(service, response);
+    await service.save();
+
+    const updatedService = await Service.findByPk(service.id, {include: serviceInclude});
+
+    return {
+        status: 200,
+        data: {
+            message: 'Payment status checked',
+            service: updatedService,
+            collectionId: service.payment_collection_id,
+            paymentStatus: service.payment_status,
+            providerRef: service.payment_provider_ref,
+            failReason: service.payment_fail_reason,
         },
     };
 };

@@ -55,6 +55,8 @@ class Commands {
             'GET_SERVICES_BY_OWNER',
             'GET_SERVICES_BY_VEHICLE',
             'UPDATE_SERVICE',
+            'INIT_SERVICE_PAYMENT',
+            'CHECK_SERVICE_PAYMENT_STATUS',
 
             // Car register requests
             'CREATE_CAR_REGISTER_REQUEST',
@@ -142,6 +144,8 @@ class Commands {
         cmd['GET_SERVICES_BY_OWNER'] = {model: 'Service', method: 'getServicesByOwner', return: 'promise'};
         cmd['GET_SERVICES_BY_VEHICLE'] = {model: 'Service', method: 'getServicesByVehicle', return: 'promise'};
         cmd['UPDATE_SERVICE'] = {model: 'Service', method: 'updateService', return: 'promise'};
+        cmd['INIT_SERVICE_PAYMENT'] = {model: 'Service', method: 'initiatePayment', return: 'promise'};
+        cmd['CHECK_SERVICE_PAYMENT_STATUS'] = {model: 'Service', method: 'checkPaymentStatus', return: 'promise'};
 
         // Car register requests
         cmd['CREATE_CAR_REGISTER_REQUEST'] = {model: 'CarRegisterRequest', method: 'createRequest', return: 'promise'};

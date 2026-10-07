@@ -216,7 +216,7 @@ INSERT INTO `oil_products` (`id`, `name`, `brand`, `grade`, `category`, `descrip
 CREATE TABLE `push_device_tokens` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `device_token` text NOT NULL,
+  `device_token` varchar(512) NOT NULL,
   `platform` enum('android','ios','web','unknown') NOT NULL DEFAULT 'unknown',
   `device_id` varchar(255) DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 1,
@@ -411,7 +411,7 @@ ALTER TABLE `oil_products`
 --
 ALTER TABLE `push_device_tokens`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `push_device_tokens_device_token` (`device_token`) USING HASH,
+  ADD UNIQUE KEY `push_device_tokens_device_token` (`device_token`),
   ADD KEY `push_device_tokens_user_id` (`user_id`);
 
 --

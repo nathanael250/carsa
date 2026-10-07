@@ -39,6 +39,8 @@ const COMMAND_PERMISSIONS = {
     GET_OIL_PRODUCT: ['garage_admin', 'service_technician', 'super_admin'],
     CREATE_SERVICE: ['garage_admin', 'service_technician', 'super_admin'],
     UPDATE_SERVICE: ['garage_admin', 'service_technician', 'super_admin'],
+    INIT_SERVICE_PAYMENT: ['garage_admin', 'service_technician', 'super_admin'],
+    CHECK_SERVICE_PAYMENT_STATUS: ['garage_admin', 'service_technician', 'super_admin'],
     CREATE_CAR_REGISTER_REQUEST: ['garage_admin', 'service_technician', 'super_admin'],
     VERIFY_CAR_REGISTER_CODE: ['garage_admin', 'service_technician', 'super_admin'],
     REGISTER_VEHICLE_FROM_REQUEST: ['garage_admin', 'service_technician', 'super_admin'],

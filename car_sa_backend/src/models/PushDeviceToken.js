@@ -6,7 +6,7 @@ const {createHttpError} = require('../utils/httpError');
 const PushDeviceToken = sequelize.define('PushDeviceToken', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     user_id: {type: DataTypes.INTEGER, allowNull: false},
-    device_token: {type: DataTypes.TEXT, allowNull: false},
+    device_token: {type: DataTypes.STRING(512), allowNull: false},
     platform: {
         type: DataTypes.ENUM('android', 'ios', 'web', 'unknown'),
         allowNull: false,

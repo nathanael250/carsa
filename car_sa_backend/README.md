@@ -107,6 +107,10 @@ See `docs/garage-admin-activities.md` for the garage admin activity scope.
 - `PORT` (default 5001)
 - `JWT_SECRET` (required for auth)
 - `API_KEY` (optional; if set, `apiKey` header is required)
+- `TRANSPIP_PAYMENTS_URL` (optional; defaults to `https://payments.transpip.com`)
+- `TRANSPIP_COMMON_API_KEY` (required for service payment collections)
+- `TRANSPIP_TENANT_API_KEY` (required for service payment collections)
+- `TRANSPIP_PAYMENT_TIMEOUT_MS` (optional; defaults to `15000`)
 - `DB_DIALECT` (default `mysql`)
 - `DB_HOST`
 - `DB_PORT` (default `3306`)
