@@ -75,6 +75,9 @@ function getPaymentStatus(data) {
 function updateServicePaymentFromStatus(service, data) {
     const status = getPaymentStatus(data);
     if (status) {
+        if (service.payment_status === 'SUCCESS' && status !== 'SUCCESS') {
+            return;
+        }
         service.payment_status = status;
     }
     service.payment_provider_ref = data?.providerRef || data?.provider_ref || data?.data?.providerRef || data?.data?.provider_ref || service.payment_provider_ref;
@@ -674,7 +677,13 @@ Service.initiatePayment = async ({params, body, user}) => {
         };
     }
 
-    if (service.payment_collection_id && !TERMINAL_PAYMENT_STATUSES.includes(service.payment_status)) {
+    const normalizedPhone = String(phone).trim();
+    const isSamePendingPayment = service.payment_collection_id &&
+        !TERMINAL_PAYMENT_STATUSES.includes(service.payment_status) &&
+        Number(service.payment_amount) === parsedAmount &&
+        String(service.payment_phone || '').trim() === normalizedPhone;
+
+    if (isSamePendingPayment) {
         return {
             status: 200,
             data: {
@@ -691,7 +700,7 @@ Service.initiatePayment = async ({params, body, user}) => {
     const response = await initiateCollection({
         idempotencyKey,
         userPseudoId: `service-${service.id}`,
-        phone,
+        phone: normalizedPhone,
         amount: parsedAmount,
         customerName: owner?.name,
         customerEmail: owner?.email,
@@ -704,7 +713,7 @@ Service.initiatePayment = async ({params, body, user}) => {
 
     service.payment_collection_id = collectionId;
     service.payment_status = getPaymentStatus(response) || 'PROCESSING';
-    service.payment_phone = phone;
+    service.payment_phone = normalizedPhone;
     service.payment_amount = parsedAmount;
     service.payment_provider_ref = response.providerRef || response.provider_ref || service.payment_provider_ref;
     service.payment_fail_reason = null;
