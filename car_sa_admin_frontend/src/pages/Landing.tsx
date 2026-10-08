@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import carsaLogo from "../assets/carsa.png";
 import appStoreLogo from "../assets/mobappLogo/AppStore.png";
-import googlePlayLogo from "../assets/mobappLogo/GooglePlay.png";
+import androidLogo from "../assets/mobappLogo/android.svg";
 
 const BRAND = "#FEA14C";
 const BRAND_RGB = "254,161,76";
@@ -31,16 +31,18 @@ const FOOTER_SOCIAL = [
 
 const APP_DOWNLOADS = [
   {
-    label: "Google Play",
-    logo: googlePlayLogo,
-    eyebrow: "Get it on",
-    href: "https://play.google.com/store",
+    label: "Download APK",
+    logo: androidLogo,
+    eyebrow: "Android installer",
+    href: "/downloads/carsa.apk",
+    download: "carsa.apk",
   },
   {
     label: "App Store",
     logo: appStoreLogo,
     eyebrow: "Download on the",
     href: "https://www.apple.com/app-store/",
+    download: undefined,
   },
 ];
 
@@ -386,21 +388,22 @@ export default function HeroSection() {
           {/* App downloads */}
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
             {APP_DOWNLOADS.map((store) => {
-              const isGoogle = store.label === "Google Play";
+              const isAndroidApk = store.label === "Download APK";
 
               return (
                 <a
                   key={store.label}
                   href={store.href}
-                  target="_blank"
-                  rel="noreferrer"
+                  download={store.download}
+                  target={store.download ? undefined : "_blank"}
+                  rel={store.download ? undefined : "noreferrer"}
                   className="flex min-w-[255px] items-center gap-4 px-6 py-4 transition-all duration-300"
                   style={{
                     fontFamily: "'Courier New', monospace",
-                    color: isGoogle ? DARK : BRAND,
-                    background: isGoogle ? `rgba(${DARK_RGB},0.08)` : `rgba(${BRAND_RGB},0.08)`,
-                    border: `1px solid ${isGoogle ? `rgba(${DARK_RGB},0.42)` : `rgba(${BRAND_RGB},0.42)`}`,
-                    boxShadow: isGoogle
+                    color: isAndroidApk ? DARK : BRAND,
+                    background: isAndroidApk ? `rgba(${DARK_RGB},0.08)` : `rgba(${BRAND_RGB},0.08)`,
+                    border: `1px solid ${isAndroidApk ? `rgba(${DARK_RGB},0.42)` : `rgba(${BRAND_RGB},0.42)`}`,
+                    boxShadow: isAndroidApk
                       ? `0 10px 30px rgba(${DARK_RGB},0.08)`
                       : `0 10px 30px rgba(${BRAND_RGB},0.06)`,
                     clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
@@ -408,17 +411,17 @@ export default function HeroSection() {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.background = isGoogle ? `rgba(${DARK_RGB},0.14)` : `rgba(${BRAND_RGB},0.14)`;
-                    e.currentTarget.style.borderColor = isGoogle ? DARK : BRAND;
-                    e.currentTarget.style.boxShadow = isGoogle
+                    e.currentTarget.style.background = isAndroidApk ? `rgba(${DARK_RGB},0.14)` : `rgba(${BRAND_RGB},0.14)`;
+                    e.currentTarget.style.borderColor = isAndroidApk ? DARK : BRAND;
+                    e.currentTarget.style.boxShadow = isAndroidApk
                       ? `0 14px 34px rgba(${DARK_RGB},0.14)`
                       : `0 14px 34px rgba(${BRAND_RGB},0.12)`;
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.background = isGoogle ? `rgba(${DARK_RGB},0.08)` : `rgba(${BRAND_RGB},0.08)`;
-                    e.currentTarget.style.borderColor = isGoogle ? `rgba(${DARK_RGB},0.42)` : `rgba(${BRAND_RGB},0.42)`;
-                    e.currentTarget.style.boxShadow = isGoogle
+                    e.currentTarget.style.background = isAndroidApk ? `rgba(${DARK_RGB},0.08)` : `rgba(${BRAND_RGB},0.08)`;
+                    e.currentTarget.style.borderColor = isAndroidApk ? `rgba(${DARK_RGB},0.42)` : `rgba(${BRAND_RGB},0.42)`;
+                    e.currentTarget.style.boxShadow = isAndroidApk
                       ? `0 10px 30px rgba(${DARK_RGB},0.08)`
                       : `0 10px 30px rgba(${BRAND_RGB},0.06)`;
                   }}
@@ -433,7 +436,7 @@ export default function HeroSection() {
                     <div
                       className="text-[11px] font-bold uppercase"
                       style={{
-                        color: isGoogle ? `rgba(${DARK_RGB},0.85)` : `rgba(${BRAND_RGB},0.95)`,
+                        color: isAndroidApk ? `rgba(${DARK_RGB},0.85)` : `rgba(${BRAND_RGB},0.95)`,
                         letterSpacing: "0.2em",
                         lineHeight: 1.2,
                       }}
@@ -444,7 +447,7 @@ export default function HeroSection() {
                       className="text-xl font-black"
                       style={{
                         fontFamily: "'Georgia', 'Times New Roman', serif",
-                        color: isGoogle ? DARK : BRAND,
+                        color: isAndroidApk ? DARK : BRAND,
                         letterSpacing: "0.01em",
                         lineHeight: 1.1,
                       }}

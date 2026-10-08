@@ -53,6 +53,7 @@ const COMMAND_PERMISSIONS = {
     GET_CURRENT_USER: ['super_admin', 'garage_admin', 'service_technician', 'car_owner'],
     UPDATE_PROFILE: ['super_admin', 'garage_admin', 'service_technician', 'car_owner'],
     CHANGE_PASSWORD: ['super_admin', 'garage_admin', 'service_technician', 'car_owner'],
+    DELETE_MY_ACCOUNT: ['garage_admin', 'service_technician', 'car_owner'],
     REGISTER_PUSH_DEVICE_TOKEN: ['super_admin', 'garage_admin', 'service_technician', 'car_owner'],
     UNREGISTER_PUSH_DEVICE_TOKEN: ['super_admin', 'garage_admin', 'service_technician', 'car_owner'],
 

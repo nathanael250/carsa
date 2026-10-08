@@ -26,6 +26,7 @@ class Commands {
             'GET_CURRENT_USER',
             'UPDATE_PROFILE',
             'CHANGE_PASSWORD',
+            'DELETE_MY_ACCOUNT',
             'REGISTER_PUSH_DEVICE_TOKEN',
             'UNREGISTER_PUSH_DEVICE_TOKEN',
 
@@ -115,6 +116,7 @@ class Commands {
         cmd['GET_CURRENT_USER'] = {model: 'User', method: 'getCurrentUser', return: 'promise'};
         cmd['UPDATE_PROFILE'] = {model: 'User', method: 'updateProfile', return: 'promise'};
         cmd['CHANGE_PASSWORD'] = {model: 'User', method: 'changePassword', return: 'promise'};
+        cmd['DELETE_MY_ACCOUNT'] = {model: 'User', method: 'deleteMyAccount', return: 'promise'};
         cmd['REGISTER_PUSH_DEVICE_TOKEN'] = {model: 'PushDeviceToken', method: 'registerToken', return: 'promise'};
         cmd['UNREGISTER_PUSH_DEVICE_TOKEN'] = {model: 'PushDeviceToken', method: 'unregisterToken', return: 'promise'};
 

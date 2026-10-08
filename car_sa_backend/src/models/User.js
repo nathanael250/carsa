@@ -1009,4 +1009,149 @@ User.deleteUserWhithAllDetails = async ({params}) => {
     }
 };
 
+User.deleteMyAccount = async ({user}) => {
+    if (!user || !user.id) {
+        throw createHttpError('Authentication is required', 401);
+    }
+
+    if (user.role === 'super_admin') {
+        throw createHttpError('Super admin accounts cannot be deleted from the mobile app', 403);
+    }
+
+    return deleteAccountWithDetails(user.id);
+};
+
+async function deleteAccountWithDetails(userId) {
+    const Vehicle = require('./Vehicle');
+    const Service = require('./Service');
+    const Notification = require('./Notification');
+    const CarRegisterRequest = require('./CarRegisterRequest');
+    const PushDeviceToken = require('./PushDeviceToken');
+
+    const transaction = await sequelize.transaction();
+    try {
+        const user = await User.findByPk(userId, {
+            include: [{
+                model: Garage,
+                as: 'garage',
+                include: [{
+                    model: BusinessDocument,
+                    as: 'documents',
+                }],
+            }],
+            transaction,
+        });
+
+        if (!user) {
+            throw createHttpError('User not found', 404);
+        }
+
+        const garageIds = [];
+        if (user.garage?.id) {
+            garageIds.push(user.garage.id);
+        }
+        if (user.garage_id && !garageIds.includes(user.garage_id)) {
+            garageIds.push(user.garage_id);
+        }
+
+        const vehicles = await Vehicle.findAll({
+            where: {owner_id: user.id},
+            attributes: ['id'],
+            transaction,
+        });
+        const vehicleIds = vehicles.map(vehicle => vehicle.id);
+
+        if (vehicleIds.length > 0) {
+            await Service.destroy({
+                where: {vehicle_id: {[Op.in]: vehicleIds}},
+                transaction,
+            });
+        }
+
+        await Service.destroy({
+            where: {performed_by_user_id: user.id},
+            transaction,
+        });
+
+        if (garageIds.length > 0) {
+            await Service.destroy({
+                where: {garage_id: {[Op.in]: garageIds}},
+                transaction,
+            });
+        }
+
+        await Notification.destroy({
+            where: {user_id: user.id},
+            transaction,
+        });
+
+        await CarRegisterRequest.destroy({
+            where: {
+                [Op.or]: [
+                    {user_id: user.id},
+                    {requested_by_user_id: user.id},
+                ],
+            },
+            transaction,
+        });
+
+        await PushDeviceToken.destroy({
+            where: {user_id: user.id},
+            transaction,
+        });
+
+        await EmailVerification.destroy({
+            where: {user_id: user.id},
+            transaction,
+        });
+
+        if (vehicleIds.length > 0) {
+            await Vehicle.destroy({
+                where: {id: {[Op.in]: vehicleIds}},
+                transaction,
+            });
+        }
+
+        if (user.garage) {
+            await BusinessDocument.destroy({
+                where: {garage_id: user.garage.id},
+                transaction,
+            });
+
+            await User.update(
+                {garage_id: null},
+                {
+                    where: {garage_id: user.garage.id},
+                    transaction,
+                }
+            );
+
+            await Garage.destroy({
+                where: {owner_user_id: user.id},
+                transaction,
+            });
+        }
+
+        await user.destroy({transaction});
+        await transaction.commit();
+
+        return {
+            status: 200,
+            data: {
+                message: 'Account deleted successfully',
+                deleted: {
+                    user_id: user.id,
+                    garage_deleted: !!user.garage,
+                    vehicles_deleted: vehicleIds.length,
+                },
+            },
+        };
+    } catch (err) {
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
+        throw err;
+    }
+}
+
 module.exports = User;
