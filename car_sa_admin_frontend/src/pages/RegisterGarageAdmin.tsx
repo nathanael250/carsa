@@ -57,12 +57,21 @@ const RegisterGarageAdmin = () => {
   );
   const fileInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
       setError('Name, email, and password are required.');
+      return;
+    }
+    if (!isValidEmail(formData.email)) {
+      setError('Please enter a valid email address.');
+      setStep(1);
       return;
     }
     if (!formData.garage_name.trim()) {
@@ -124,6 +133,10 @@ const RegisterGarageAdmin = () => {
     if (step === 1) {
       if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
         setError('Name, email, and password are required.');
+        return;
+      }
+      if (!isValidEmail(formData.email)) {
+        setError('Please enter a valid email address.');
         return;
       }
       setStep(2);
@@ -391,12 +404,18 @@ const RegisterGarageAdmin = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-600">Country</label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.garage_country}
                         onChange={(e) => setFormData({ ...formData, garage_country: e.target.value })}
                         className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-800 transition-all focus:border-[#FEA14C] focus:outline-none focus:ring-4 focus:ring-[#FEA14C]/10"
-                      />
+                      >
+                        <option value="Rwanda">Rwanda</option>
+                        <option value="Burundi">Burundi</option>
+                        <option value="Uganda">Uganda</option>
+                        <option value="Tanzania">Tanzania</option>
+                        <option value="Kenya">Kenya</option>
+                        <option value="Democratic Republic of Congo">Democratic Republic of Congo</option>
+                      </select>
                     </div>
                   </div>
                 </div>

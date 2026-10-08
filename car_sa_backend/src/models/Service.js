@@ -61,7 +61,21 @@ const oilProductAttributes = ['id', 'name', 'brand', 'grade', 'category', 'descr
 const TERMINAL_PAYMENT_STATUSES = ['SUCCESS', 'FAILED'];
 
 function normalizePaymentStatus(status) {
-    return status ? String(status).trim().toUpperCase() : null;
+    if (!status) return null;
+    const normalized = String(status).trim().toUpperCase();
+    if (['SUCCESS', 'SUCCESSFUL', 'PAID', 'COMPLETED', 'COMPLETE', 'APPROVED'].includes(normalized)) {
+        return 'SUCCESS';
+    }
+    if (['FAILED', 'FAIL', 'DECLINED', 'REJECTED', 'CANCELLED', 'CANCELED', 'EXPIRED'].includes(normalized)) {
+        return 'FAILED';
+    }
+    if (['QUEUED', 'PENDING'].includes(normalized)) {
+        return 'QUEUED';
+    }
+    if (['PROCESSING', 'IN_PROGRESS', 'ONGOING'].includes(normalized)) {
+        return 'PROCESSING';
+    }
+    return normalized;
 }
 
 function getPaymentCollectionId(data) {
@@ -69,7 +83,25 @@ function getPaymentCollectionId(data) {
 }
 
 function getPaymentStatus(data) {
-    return normalizePaymentStatus(data?.status || data?.data?.status || data?.collection?.status);
+    return normalizePaymentStatus(
+        data?.status ||
+        data?.paymentStatus ||
+        data?.payment_status ||
+        data?.collectionStatus ||
+        data?.collection_status ||
+        data?.transactionStatus ||
+        data?.transaction_status ||
+        data?.data?.status ||
+        data?.data?.paymentStatus ||
+        data?.data?.payment_status ||
+        data?.data?.collectionStatus ||
+        data?.data?.collection_status ||
+        data?.data?.transactionStatus ||
+        data?.data?.transaction_status ||
+        data?.collection?.status ||
+        data?.collection?.paymentStatus ||
+        data?.collection?.payment_status
+    );
 }
 
 function updateServicePaymentFromStatus(service, data) {
