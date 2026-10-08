@@ -231,7 +231,7 @@ const Approvals = () => {
       {selectedAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/25"
             onClick={() => setSelectedAdmin(null)}
           />
           <div className="relative bg-white w-full max-w-4xl rounded-xl shadow-xl border border-gray-200 max-h-[90vh] overflow-y-auto">

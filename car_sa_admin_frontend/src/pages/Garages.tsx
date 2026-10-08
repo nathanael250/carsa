@@ -372,7 +372,7 @@ const Garages = () => {
       </div>
 
       {showOnboardingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
           <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
