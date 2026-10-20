@@ -16,6 +16,7 @@ import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import RegisterGarageAdmin from './pages/RegisterGarageAdmin';
 import Landing from './pages/Landing';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import DashboardLayout from './components/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRoute from './components/RoleRoute';
@@ -50,6 +51,7 @@ function App() {
           }
         />
         <Route path="/register-garage-admin" element={<RegisterGarageAdmin />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/verify-garage-admin-email" element={<Navigate to="/login" replace />} />
         <Route
           path="/dashboard"

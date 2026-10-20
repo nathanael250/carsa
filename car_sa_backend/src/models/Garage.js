@@ -119,7 +119,7 @@ Garage.listGarages = async ({user}) => {
     };
 };
 
-Garage.registerVehicle = async ({body}) => {
+Garage.registerVehicle = async ({body, user}) => {
     const {
         owner_id,
         owner_name,
@@ -142,64 +142,94 @@ Garage.registerVehicle = async ({body}) => {
 
     const User = require('./User');
     const Vehicle = require('./Vehicle');
-    let resolvedOwnerId = owner_id;
-    let temporaryPassword = null;
 
-    if (!resolvedOwnerId) {
-        if (!owner_email || !owner_name) {
-            throw createHttpError('Owner name and email are required when owner_id is not provided', 400);
-        }
-
-        let owner = await User.findOne({where: {email: owner_email}});
-        if (!owner) {
-            const rawPassword = owner_password || Math.random().toString(36).slice(-8);
-            const hashedPassword = await bcrypt.hash(rawPassword, 10);
-
-            owner = await User.create({
-                name: owner_name,
-                email: owner_email,
-                phone: owner_phone,
-                date_of_birth: owner_date_of_birth,
-                gender: owner_gender,
-                role: 'car_owner',
-                password_hash: hashedPassword,
-            });
-
-            resolvedOwnerId = owner.id;
-            temporaryPassword = owner_password ? null : rawPassword;
-        } else {
-            resolvedOwnerId = owner.id;
-        }
-    } else {
-        const owner = await User.findByPk(resolvedOwnerId);
-        if (!owner) {
-            throw createHttpError('Owner not found', 404);
-        }
-    }
-
+    // Check the plate before touching any account, so a duplicate plate never leaves a stray owner behind.
     const normalizedPlate = license_plate.trim().toUpperCase();
-
     const existingVehicle = await Vehicle.findOne({where: {license_plate: normalizedPlate}});
     if (existingVehicle) {
         throw createHttpError('A vehicle with this license plate already exists', 400);
     }
 
-    const vehicle = await Vehicle.create({
-        owner_id: resolvedOwnerId,
-        make,
-        model,
-        year,
-        vin,
-        license_plate: normalizedPlate,
-        fuel_type,
+    let owner = null;
+    if (owner_id) {
+        owner = await User.findByPk(owner_id);
+        if (!owner) {
+            throw createHttpError('Owner not found', 404);
+        }
+    } else {
+        if (!owner_email || !owner_name) {
+            throw createHttpError('Owner name and email are required when owner_id is not provided', 400);
+        }
+        owner = await User.findOne({where: {email: owner_email.trim()}});
+    }
+
+    if (owner && owner.role !== 'car_owner') {
+        throw createHttpError('This account is not a car owner account. Use a different email.', 400);
+    }
+
+    const isNewOwner = !owner;
+    let temporaryPassword = null;
+
+    // Owner account and vehicle are created together: if either fails, neither is kept.
+    const vehicle = await sequelize.transaction(async (transaction) => {
+        if (isNewOwner) {
+            const rawPassword = owner_password || Math.random().toString(36).slice(-8);
+            owner = await User.create({
+                name: owner_name,
+                email: owner_email.trim(),
+                phone: owner_phone,
+                date_of_birth: owner_date_of_birth,
+                gender: owner_gender,
+                role: 'car_owner',
+                password_hash: await bcrypt.hash(rawPassword, 10),
+            }, {transaction});
+            temporaryPassword = owner_password ? null : rawPassword;
+        }
+
+        return Vehicle.create({
+            owner_id: owner.id,
+            make,
+            model,
+            year,
+            vin,
+            license_plate: normalizedPlate,
+            fuel_type,
+        }, {transaction});
     });
+
+    if (!isNewOwner) {
+        // No confirmation is required, so let the existing owner know a vehicle was added to their account.
+        try {
+            const garage = user?.garage_id
+                ? await Garage.findByPk(user.garage_id)
+                : await Garage.findOne({where: {owner_user_id: user?.id}});
+            const garageName = garage?.name || 'A garage';
+            const Notification = require('./Notification');
+            await Notification.createAndDispatch({
+                user_id: owner.id,
+                type: 'system',
+                title: 'Vehicle Added to Your Account',
+                message: `${garageName} registered your vehicle (${normalizedPlate}) to your account.`,
+                read: false,
+                related_entity_type: 'vehicle',
+                related_entity_id: vehicle.id,
+                metadata: {
+                    garage_name: garageName,
+                    license_plate: normalizedPlate,
+                    vehicle_id: vehicle.id,
+                },
+            });
+        } catch (notifError) {
+            console.error('Error creating notification:', notifError);
+        }
+    }
 
     return {
         status: 201,
         data: {
             message: 'Vehicle registered successfully',
             vehicle,
-            owner_id: resolvedOwnerId,
+            owner_id: owner.id,
             temporary_password: temporaryPassword,
         },
     };

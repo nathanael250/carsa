@@ -906,6 +906,9 @@ export default function HeroSection() {
           >
             <div>© {currentYear} CarSa. All rights reserved.</div>
             <div className="flex gap-6">
+              <Link to="/privacy-policy" style={{ color: "rgba(255,255,255,0.82)", textDecoration: "none" }}>
+                Privacy Policy
+              </Link>
               <span>Performance First</span>
               <span>Precision Always</span>
             </div>
