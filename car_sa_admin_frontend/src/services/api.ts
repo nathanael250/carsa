@@ -11,6 +11,48 @@ interface ApiResponse<T = any> {
   message?: string;
 }
 
+export interface GarageRevenue {
+  garage_id: number;
+  garage_name: string;
+  city?: string | null;
+  total_amount: number;
+  payments_count: number;
+  share_percent: number;
+  last_paid_at?: string | null;
+}
+
+export interface RevenuePayment {
+  id: number;
+  garage_id: number;
+  status: string;
+  payment_amount: number;
+  payment_phone?: string | null;
+  payment_provider_ref?: string | null;
+  paid_at: string;
+  completed_at?: string | null;
+  garage?: { id: number; name: string } | null;
+  vehicle?: { id: number; license_plate: string; make?: string; model?: string } | null;
+  service_catalog?: { id: number; name: string } | null;
+  performed_by?: { id: number; name: string } | null;
+}
+
+export interface RevenueReportData {
+  currency: string;
+  system_total: number;
+  earned: number;
+  transactions: {
+    successful: { count: number; amount: number };
+    failed: { count: number; amount: number };
+    pending: { count: number; amount: number };
+  };
+  selected_garage: GarageRevenue | null;
+  by_garage: GarageRevenue[];
+  payments: RevenuePayment[];
+  payments_total: number;
+  limit: number;
+  offset: number;
+}
+
 class ApiService {
   private isPublicAuthCommand(command: string): boolean {
     return (
@@ -564,6 +606,25 @@ class ApiService {
         date_from: params?.date_from,
         date_to: params?.date_to,
         service_catalog_id: params?.service_catalog_id,
+      },
+    });
+  }
+
+  async getRevenueReport(params?: {
+    garage_id?: number | string;
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    return this.requestCommand<RevenueReportData>('REVENUE_REPORT', {
+      body: {},
+      query: {
+        garage_id: params?.garage_id || undefined,
+        date_from: params?.date_from || undefined,
+        date_to: params?.date_to || undefined,
+        limit: params?.limit,
+        offset: params?.offset,
       },
     });
   }

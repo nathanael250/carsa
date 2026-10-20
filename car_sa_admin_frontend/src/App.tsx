@@ -11,6 +11,7 @@ import Mechanics from './pages/Mechanics';
 import MechanicDetails from './pages/MechanicDetails';
 import ServiceRequests from './pages/ServiceRequests';
 import Reports from './pages/Reports';
+import Revenue from './pages/Revenue';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import RegisterGarageAdmin from './pages/RegisterGarageAdmin';
@@ -144,6 +145,14 @@ function App() {
             element={
               <RoleRoute allowed={['garage_admin', 'super_admin']}>
                 <Reports />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="revenue"
+            element={
+              <RoleRoute allowed={['super_admin']}>
+                <Revenue />
               </RoleRoute>
             }
           />

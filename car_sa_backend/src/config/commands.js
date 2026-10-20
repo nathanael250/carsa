@@ -36,6 +36,7 @@ class Commands {
             'GARAGE_REGISTER_VEHICLE',
             'FIND_VEHICLE_BY_LICENSE',
             'GARAGE_DASHBOARD_STATS',
+            'REVENUE_REPORT',
 
             // Service catalog
             'CREATE_SERVICE_CATALOG',
@@ -126,6 +127,7 @@ class Commands {
         cmd['GARAGE_REGISTER_VEHICLE'] = {model: 'Garage', method: 'registerVehicle', return: 'promise'};
         cmd['FIND_VEHICLE_BY_LICENSE'] = {model: 'Garage', method: 'findVehicleByLicensePlate', return: 'promise'};
         cmd['GARAGE_DASHBOARD_STATS'] = {model: 'GarageDashboard', method: 'getDashboardStats', return: 'promise'};
+        cmd['REVENUE_REPORT'] = {model: 'RevenueReport', method: 'getRevenueReport', return: 'promise'};
 
         // Service catalog
         cmd['CREATE_SERVICE_CATALOG'] = {model: 'ServiceCatalog', method: 'createServiceCatalog', return: 'promise'};

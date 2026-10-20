@@ -28,6 +28,7 @@ const COMMAND_PERMISSIONS = {
     LIST_PENDING_GARAGE_ADMINS: ['super_admin'],
     APPROVE_GARAGE_ADMIN: ['super_admin'],
     REJECT_GARAGE_ADMIN: ['super_admin'],
+    REVENUE_REPORT: ['super_admin'],
 
     // Garage Admin + Mechanic operations
     SEARCH_USER: ['garage_admin', 'service_technician', 'super_admin'],
