@@ -110,3 +110,7 @@ public/
 # Operating System files
 .DS_Store
 Thumbs.db
+
+# User-uploaded files (keep the folder, not its contents)
+uploads/*
+!uploads/.gitkeep
