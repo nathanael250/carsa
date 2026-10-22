@@ -43,6 +43,10 @@ interface ServiceItem {
     name: string;
     email: string;
   };
+  garage?: {
+    id: number;
+    name: string;
+  };
 }
 
 interface Mechanic {
@@ -66,6 +70,8 @@ const ServiceRequests = () => {
   const [technicianId, setTechnicianId] = useState('all');
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [detailsMode, setDetailsMode] = useState<'view' | 'edit'>('view');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [updateForm, setUpdateForm] = useState({
     status: '',
     notes: '',
@@ -182,7 +188,8 @@ const ServiceRequests = () => {
     }
   };
 
-  const openDetails = (service: ServiceItem) => {
+  const openDetails = (service: ServiceItem, mode: 'view' | 'edit' = 'view') => {
+    setDetailsMode(mode);
     setSelectedService(service);
     setUpdateForm({
       status: service.status || '',
@@ -210,6 +217,42 @@ const ServiceRequests = () => {
   };
 
   const serviceHasConfirmedPayment = selectedService?.payment_status === 'SUCCESS';
+
+  // Unfinished, unpaid services can be removed instead of waiting to be resumed.
+  const canDeleteService = (service: ServiceItem) =>
+    !isMyServicesPage && service.status !== 'completed' && service.payment_status !== 'SUCCESS';
+
+  const handleDelete = async (service: ServiceItem) => {
+    const plate = service.vehicle?.license_plate || 'this vehicle';
+    const serviceName = service.service_catalog?.name || 'service';
+    const pendingPaymentWarning =
+      service.payment_status === 'QUEUED' || service.payment_status === 'PROCESSING'
+        ? '\n\nA payment request is still processing. If the customer has already paid, the deletion will be refused.'
+        : '';
+    if (!window.confirm(`Delete the ${serviceName} for ${plate}? This cannot be undone.${pendingPaymentWarning}`)) {
+      return;
+    }
+
+    setError(null);
+    setDeletingId(service.id);
+    try {
+      const response = await api.deleteServiceRecord(service.id);
+      if (response.error) {
+        setError(response.error);
+        fetchServices();
+        return;
+      }
+      if (selectedService?.id === service.id) {
+        closeDetails();
+      }
+      setServices((prev) => prev.filter((item) => item.id !== service.id));
+    } catch (err) {
+      setError('Failed to delete service');
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const refreshSelectedServicePayment = (service: ServiceItem) => {
     setSelectedService(service);
@@ -337,6 +380,84 @@ const ServiceRequests = () => {
     }
   };
 
+  const escapeHtml = (value: unknown) =>
+    String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] || char);
+
+  // Prints the activities currently listed (with the active filters) as a standalone report.
+  const handlePrint = () => {
+    const garageNames = [...new Set(services.map((service) => service.garage?.name).filter(Boolean))];
+    const workerName = technicianId !== 'all' ? mechanics.find((m) => String(m.id) === technicianId)?.name : null;
+    const filters = [
+      statusFilter !== 'all' ? `Status: ${statusFilter.replace('_', ' ')}` : null,
+      workerName ? `Worker: ${workerName}` : null,
+      licensePlate.trim() ? `Plate: ${licensePlate.trim()}` : null,
+      dateFrom ? `From: ${new Date(dateFrom).toLocaleDateString()}` : null,
+      dateTo ? `To: ${new Date(dateTo).toLocaleDateString()}` : null,
+    ].filter(Boolean);
+    const countByStatus = (status: string) => services.filter((service) => service.status === status).length;
+
+    const rows = services
+      .map(
+        (service, index) => `<tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(service.vehicle?.license_plate || 'N/A')}<br><small>${escapeHtml(`${service.vehicle?.make || ''} ${service.vehicle?.model || ''}`.trim())}</small></td>
+          <td>${escapeHtml(service.vehicle?.owner?.name || 'N/A')}</td>
+          <td>${escapeHtml(service.service_catalog?.name || 'N/A')}</td>
+          <td>${escapeHtml(service.performed_by?.name || 'N/A')}</td>
+          <td class="cap">${escapeHtml(service.status.replace('_', ' '))}</td>
+          <td>${escapeHtml(service.payment_status || '-')}</td>
+          <td>${escapeHtml(formatDateTime(service.created_at))}</td>
+        </tr>`
+      )
+      .join('');
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(pageCopy.title)} report</title>
+      <style>
+        body { font-family: Arial, sans-serif; color: #1f2937; margin: 24px; }
+        h1 { margin: 0; font-size: 20px; color: #2F4858; }
+        .meta { margin: 6px 0 16px; font-size: 12px; color: #6b7280; }
+        .summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 13px; }
+        .summary b { font-size: 16px; display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; }
+        th { background: #f3f4f6; }
+        tr { page-break-inside: avoid; }
+        small { color: #6b7280; }
+        .cap { text-transform: capitalize; }
+        @page { margin: 12mm; }
+      </style></head><body>
+      <h1>CarSa · ${escapeHtml(pageCopy.title)} report</h1>
+      <div class="meta">
+        ${garageNames.length ? `Garage: ${escapeHtml(garageNames.join(', '))} · ` : ''}Printed ${escapeHtml(new Date().toLocaleString())}
+        ${filters.length ? `<br>Filters: ${escapeHtml(filters.join(' · '))}` : ''}
+      </div>
+      <div class="summary">
+        <div><b>${services.length}</b>Total</div>
+        <div><b>${countByStatus('completed')}</b>Completed</div>
+        <div><b>${countByStatus('in_progress')}</b>In progress</div>
+        <div><b>${countByStatus('pending')}</b>Pending</div>
+        <div><b>${countByStatus('cancelled')}</b>Cancelled</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Vehicle</th><th>Owner</th><th>Service</th><th>Worker</th><th>Status</th><th>Payment</th><th>Created</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="8">No activities found.</td></tr>'}</tbody>
+      </table>
+    </body></html>`;
+
+    const frame = document.createElement('iframe');
+    frame.style.position = 'fixed';
+    frame.style.width = '0';
+    frame.style.height = '0';
+    frame.style.border = '0';
+    frame.onload = () => {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      window.setTimeout(() => frame.remove(), 1000);
+    };
+    frame.srcdoc = html;
+    document.body.appendChild(frame);
+  };
+
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleString();
@@ -375,6 +496,16 @@ const ServiceRequests = () => {
           <h1 className="text-2xl font-bold text-gray-900">{pageCopy.title}</h1>
           <p className="text-sm text-gray-500 mt-1">{pageCopy.description}</p>
         </div>
+        <button
+          onClick={handlePrint}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-[#2F4858] text-white rounded-lg hover:bg-[#263b48] disabled:opacity-60 self-start sm:self-auto"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z" />
+          </svg>
+          Print report
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
@@ -505,12 +636,29 @@ const ServiceRequests = () => {
                       {formatDateTime(service.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => openDetails(service)}
-                        className="text-[#FEA14C] hover:text-[#FE8A21]"
-                      >
-                        View
-                      </button>
+                      <div className="flex justify-end gap-4">
+                        <button
+                          onClick={() => openDetails(service, 'view')}
+                          className="text-[#2F4858] hover:text-[#1f323d]"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => openDetails(service, 'edit')}
+                          className="text-[#FEA14C] hover:text-[#FE8A21]"
+                        >
+                          Edit
+                        </button>
+                        {canDeleteService(service) && (
+                          <button
+                            onClick={() => handleDelete(service)}
+                            disabled={deletingId === service.id}
+                            className="text-red-600 hover:text-red-700 disabled:opacity-50"
+                          >
+                            {deletingId === service.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -524,7 +672,9 @@ const ServiceRequests = () => {
         <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">{pageCopy.detailsTitle}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {detailsMode === 'edit' ? `Edit ${pageCopy.detailsTitle}` : pageCopy.detailsTitle}
+              </h2>
               <button onClick={closeDetails} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -560,6 +710,57 @@ const ServiceRequests = () => {
                 </div>
               </div>
 
+              {detailsMode === 'view' ? (
+                <>
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {[
+                      { label: 'Status', value: selectedService.status.replace('_', ' ') },
+                      { label: 'Created', value: formatDateTime(selectedService.created_at) },
+                      { label: 'Scheduled Date', value: formatDateTime(selectedService.scheduled_date) },
+                      { label: 'Mileage at Service', value: selectedService.mileage_at_service ?? '-' },
+                      { label: 'Estimated Cost', value: selectedService.estimated_cost ? `RWF ${Number(selectedService.estimated_cost).toLocaleString()}` : '-' },
+                      { label: 'Actual Cost', value: selectedService.actual_cost ? `RWF ${Number(selectedService.actual_cost).toLocaleString()}` : '-' },
+                      { label: 'Payment', value: selectedService.payment_status || 'Not started' },
+                      { label: 'Paid At', value: formatDateTime(selectedService.paid_at || null) },
+                      { label: 'MoMo Phone', value: selectedService.payment_phone || '-' },
+                      { label: 'Provider Ref', value: selectedService.payment_provider_ref || '-' },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <dt className="font-semibold text-gray-800">{item.label}</dt>
+                        <dd className="mt-1 text-gray-700 capitalize">{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <div className="text-sm">
+                    <h3 className="font-semibold text-gray-800">Notes</h3>
+                    <p className="mt-1 text-gray-700 whitespace-pre-wrap">{selectedService.notes || '-'}</p>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-3">
+                    {canDeleteService(selectedService) && (
+                      <button
+                        onClick={() => handleDelete(selectedService)}
+                        disabled={deletingId === selectedService.id}
+                        className="px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-60 mr-auto"
+                      >
+                        {deletingId === selectedService.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    )}
+                    <button
+                      onClick={closeDetails}
+                      className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => setDetailsMode('edit')}
+                      className="px-4 py-2 text-sm bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21]"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -728,6 +929,8 @@ const ServiceRequests = () => {
                   Save Changes
                 </button>
               </div>
+                </>
+              )}
             </div>
           </div>
         </div>

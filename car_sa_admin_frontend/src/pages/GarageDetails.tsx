@@ -6,7 +6,6 @@ import { authUtils } from '../utils/auth';
 const DARK = '#2F4858';
 const DARK_RGB = '47,72,88';
 const BRAND = '#FEA14C';
-const GREEN = '#16a34a';
 const AMBER = '#ca8a04';
 
 interface Garage {
@@ -39,8 +38,6 @@ interface ServiceItem {
   id: number;
   status: string;
   created_at: string;
-  estimated_cost: string | number | null;
-  actual_cost: string | number | null;
   vehicle?: {
     license_plate: string;
     make: string;
@@ -201,12 +198,6 @@ const GarageDetails = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  const formatRwf = (amount: number) =>
-    `RWF ${amount.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    })}`;
-
   if (loading) {
     return (
       <div style={{ ...panelStyle, padding: '1.5rem' }}>
@@ -252,12 +243,6 @@ const GarageDetails = () => {
       .filter((plate): plate is string => Boolean(plate))
   ).size;
 
-  const moneyEarned = services.reduce((sum, service) => {
-    const rawAmount = service.actual_cost ?? service.estimated_cost ?? 0;
-    const amount = Number(rawAmount);
-    return Number.isFinite(amount) ? sum + amount : sum;
-  }, 0);
-
   const activityDays = new Set(
     services
       .map((service) => {
@@ -268,7 +253,6 @@ const GarageDetails = () => {
   ).size;
 
   const averageServicesPerDay = activityDays > 0 ? services.length / activityDays : 0;
-  const averageMoneyPerDay = activityDays > 0 ? moneyEarned / activityDays : 0;
   const workersFromServices = new Set(
     services
       .map((service) => service.performed_by?.name?.trim())
@@ -279,17 +263,7 @@ const GarageDetails = () => {
   const statCards = [
     { label: 'Workers', value: workerCount, accent: DARK },
     { label: 'Cars Served', value: carsServed, accent: BRAND },
-    {
-      label: 'Money Earned',
-      value: formatRwf(moneyEarned),
-      accent: GREEN,
-    },
     { label: 'Services Average / Day', value: averageServicesPerDay.toFixed(1), accent: AMBER },
-    {
-      label: 'Money Earned Average / Day',
-      value: formatRwf(averageMoneyPerDay),
-      accent: BRAND,
-    },
   ];
 
   const detailItems = [
@@ -357,7 +331,7 @@ const GarageDetails = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-3">
         {statCards.map((card) => (
           <MetricCard key={card.label} label={card.label} value={card.value} accent={card.accent} />
         ))}
@@ -428,7 +402,7 @@ const GarageDetails = () => {
             <table className="min-w-full border-collapse">
               <thead>
                 <tr style={{ borderBottom: `1px solid rgba(${DARK_RGB},0.08)` }}>
-                  {['Vehicle', 'Owner', 'Service', 'Worker', 'Status', 'Created', 'Costs'].map((heading) => (
+                  {['Vehicle', 'Owner', 'Service', 'Worker', 'Status', 'Created'].map((heading) => (
                     <th
                       key={heading}
                       style={{
@@ -468,11 +442,6 @@ const GarageDetails = () => {
                     </td>
                     <td style={{ ...bodyStyle, padding: '0.95rem 1.5rem' }}>
                       {formatDateTime(service.created_at)}
-                    </td>
-                    <td style={{ ...bodyStyle, padding: '0.95rem 1.5rem' }}>
-                      Est: {service.estimated_cost != null ? formatRwf(Number(service.estimated_cost) || 0) : '-'}
-                      {' / '}
-                      Act: {service.actual_cost != null ? formatRwf(Number(service.actual_cost) || 0) : '-'}
                     </td>
                   </tr>
                 ))}

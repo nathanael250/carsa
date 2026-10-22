@@ -797,6 +797,57 @@ Service.checkPaymentStatus = async ({params, user}) => {
     };
 };
 
+Service.deleteService = async ({params, user}) => {
+    const {id} = params || {};
+    const service = await Service.findByPk(id);
+    if (!service) {
+        throw createHttpError('Service not found', 404);
+    }
+
+    if (user.role === 'garage_admin') {
+        const accessibleGarageIds = await resolveAccessibleGarageIds(user);
+        if (!accessibleGarageIds.includes(Number(service.garage_id))) {
+            throw createHttpError('You can only delete services for your garage', 403);
+        }
+    }
+
+    if (service.status === 'completed') {
+        throw createHttpError('Completed services cannot be deleted', 400);
+    }
+
+    // Refresh a pending payment first, so a payment the customer already made is never discarded.
+    if (service.payment_collection_id && !TERMINAL_PAYMENT_STATUSES.includes(service.payment_status)) {
+        try {
+            const response = await checkCollectionStatus(service.payment_collection_id);
+            updateServicePaymentFromStatus(service, response);
+            await service.save();
+        } catch (error) {
+            console.error(`Could not refresh payment for service ${service.id} before delete:`, error.message);
+        }
+    }
+
+    if (service.payment_status === 'SUCCESS') {
+        throw createHttpError('This service has been paid, so it cannot be deleted. Complete it instead.', 400);
+    }
+
+    const Notification = require('./Notification');
+    await sequelize.transaction(async (transaction) => {
+        await Notification.destroy({
+            where: {related_entity_type: 'service', related_entity_id: service.id},
+            transaction,
+        });
+        await service.destroy({transaction});
+    });
+
+    return {
+        status: 200,
+        data: {
+            message: 'Service deleted successfully',
+            deleted_id: Number(id),
+        },
+    };
+};
+
 Service.applyPaymentWebhook = async (payload) => {
     const collectionId = payload?.collectionId || payload?.collection_id;
     const status = getPaymentStatus(payload);

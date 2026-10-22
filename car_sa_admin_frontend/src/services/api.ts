@@ -500,6 +500,10 @@ class ApiService {
     });
   }
 
+  async getCurrentUser() {
+    return this.requestCommand<{ user: any }>('GET_CURRENT_USER', { body: {} });
+  }
+
   async updateProfile(payload: {
     name?: string;
     phone?: string;
@@ -626,6 +630,13 @@ class ApiService {
         limit: params?.limit,
         offset: params?.offset,
       },
+    });
+  }
+
+  async deleteServiceRecord(id: number) {
+    return this.requestCommand<{ deleted_id: number; message: string }>('DELETE_SERVICE', {
+      body: {},
+      params: { id },
     });
   }
 

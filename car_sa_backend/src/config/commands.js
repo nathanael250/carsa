@@ -59,6 +59,7 @@ class Commands {
             'UPDATE_SERVICE',
             'INIT_SERVICE_PAYMENT',
             'CHECK_SERVICE_PAYMENT_STATUS',
+            'DELETE_SERVICE',
 
             // Car register requests
             'CREATE_CAR_REGISTER_REQUEST',
@@ -150,6 +151,7 @@ class Commands {
         cmd['UPDATE_SERVICE'] = {model: 'Service', method: 'updateService', return: 'promise'};
         cmd['INIT_SERVICE_PAYMENT'] = {model: 'Service', method: 'initiatePayment', return: 'promise'};
         cmd['CHECK_SERVICE_PAYMENT_STATUS'] = {model: 'Service', method: 'checkPaymentStatus', return: 'promise'};
+        cmd['DELETE_SERVICE'] = {model: 'Service', method: 'deleteService', return: 'promise'};
 
         // Car register requests
         cmd['CREATE_CAR_REGISTER_REQUEST'] = {model: 'CarRegisterRequest', method: 'createRequest', return: 'promise'};

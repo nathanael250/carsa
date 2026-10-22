@@ -500,6 +500,9 @@ User.changePassword = async ({body, user}) => {
     if (!old_password || !new_password) {
         throw createHttpError('old_password and new_password are required', 400);
     }
+    if (String(new_password).length < 6) {
+        throw createHttpError('New password must be at least 6 characters', 400);
+    }
 
     const dbUser = await User.findByPk(user.id);
     if (!dbUser) {
@@ -508,7 +511,8 @@ User.changePassword = async ({body, user}) => {
 
     const match = await bcrypt.compare(old_password, dbUser.password_hash);
     if (!match) {
-        throw createHttpError('Old password is incorrect', 401);
+        // Not 401: clients treat 401 as an expired session and log the user out.
+        throw createHttpError('Old password is incorrect', 400);
     }
 
     dbUser.password_hash = await bcrypt.hash(new_password, 10);

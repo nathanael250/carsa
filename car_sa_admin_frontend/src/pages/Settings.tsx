@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { authUtils } from '../utils/auth';
 
@@ -14,10 +14,44 @@ const Settings = () => {
   const [passwordForm, setPasswordForm] = useState({
     old_password: '',
     new_password: '',
+    confirm_password: '',
   });
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const fillProfileForm = (profile: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    gender?: string | null;
+    date_of_birth?: string | null;
+  }) => {
+    setProfileForm({
+      name: profile.name || '',
+      email: profile.email || '',
+      phone: profile.phone || '',
+      gender: profile.gender || '',
+      date_of_birth: profile.date_of_birth ? String(profile.date_of_birth).slice(0, 10) : '',
+    });
+  };
+
+  useEffect(() => {
+    // Start from the saved profile so the form shows the real current values.
+    api
+      .getCurrentUser()
+      .then((response) => {
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data?.user) {
+          fillProfileForm(response.data.user);
+        }
+      })
+      .finally(() => setProfileLoading(false));
+  }, []);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +69,7 @@ const Settings = () => {
       return;
     }
 
+    setSavingProfile(true);
     try {
       const response = await api.updateProfile(payload);
       if (response.error) {
@@ -50,16 +85,14 @@ const Settings = () => {
         });
       }
       setProfileMessage('Profile updated successfully.');
-      setProfileForm({
-        name: '',
-        email: '',
-        phone: '',
-        gender: '',
-        date_of_birth: '',
-      });
+      if (response.data?.user) {
+        fillProfileForm(response.data.user);
+      }
     } catch (err) {
       setError('Failed to update profile');
       console.error(err);
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -71,6 +104,15 @@ const Settings = () => {
       setError('Please provide both old and new passwords.');
       return;
     }
+    if (passwordForm.new_password.length < 6) {
+      setError('New password must be at least 6 characters.');
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+    setSavingPassword(true);
     try {
       const response = await api.changePassword({
         old_password: passwordForm.old_password,
@@ -81,10 +123,12 @@ const Settings = () => {
         return;
       }
       setPasswordMessage('Password updated successfully.');
-      setPasswordForm({ old_password: '', new_password: '' });
+      setPasswordForm({ old_password: '', new_password: '', confirm_password: '' });
     } catch (err) {
       setError('Failed to change password');
       console.error(err);
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -164,9 +208,10 @@ const Settings = () => {
           <div className="md:col-span-2 flex justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21]"
+              disabled={profileLoading || savingProfile}
+              className="px-4 py-2 bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21] disabled:opacity-60"
             >
-              Update Profile
+              {profileLoading ? 'Loading...' : savingProfile ? 'Saving...' : 'Update Profile'}
             </button>
           </div>
         </form>
@@ -179,7 +224,7 @@ const Settings = () => {
             {passwordMessage}
           </div>
         )}
-        <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handlePasswordSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Old Password</label>
             <input
@@ -187,6 +232,7 @@ const Settings = () => {
               value={passwordForm.old_password}
               onChange={(e) => setPasswordForm({ ...passwordForm, old_password: e.target.value })}
               className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEA14C] focus:border-transparent"
+              autoComplete="current-password"
               required
             />
           </div>
@@ -197,15 +243,30 @@ const Settings = () => {
               value={passwordForm.new_password}
               onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
               className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEA14C] focus:border-transparent"
+              autoComplete="new-password"
+              minLength={6}
               required
             />
           </div>
-          <div className="md:col-span-2 flex justify-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+            <input
+              type="password"
+              value={passwordForm.confirm_password}
+              onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEA14C] focus:border-transparent"
+              autoComplete="new-password"
+              minLength={6}
+              required
+            />
+          </div>
+          <div className="md:col-span-3 flex justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21]"
+              disabled={savingPassword}
+              className="px-4 py-2 bg-[#FEA14C] text-white rounded-lg hover:bg-[#FE8A21] disabled:opacity-60"
             >
-              Update Password
+              {savingPassword ? 'Saving...' : 'Update Password'}
             </button>
           </div>
         </form>
