@@ -7,10 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:testing": "vite --mode testing",
+    "build:testing": "tsc -b && vite build --mode testing"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
+    "bwip-js": "^4.11.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6"

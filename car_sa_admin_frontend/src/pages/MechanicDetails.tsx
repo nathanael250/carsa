@@ -45,7 +45,7 @@ interface ServiceItem {
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "'Courier New', monospace",
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.84rem',
   letterSpacing: '0.1em',
   textTransform: 'uppercase',
@@ -55,7 +55,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const bodyStyle: React.CSSProperties = {
-  fontFamily: "'Courier New', monospace",
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.96rem',
   color: `rgba(${DARK_RGB},0.94)`,
   fontWeight: 500,
@@ -210,7 +210,7 @@ const MechanicDetails = () => {
         <button
           onClick={() => navigate(-1)}
           style={{
-            fontFamily: "'Courier New', monospace",
+            fontFamily: 'var(--font-sans)',
             fontSize: '0.92rem',
             color: `rgba(${DARK_RGB},0.9)`,
             fontWeight: 600,
@@ -298,7 +298,7 @@ const MechanicDetails = () => {
         onClick={() => navigate(-1)}
         className="flex items-center gap-2"
         style={{
-          fontFamily: "'Courier New', monospace",
+          fontFamily: 'var(--font-sans)',
           fontSize: '0.92rem',
           color: `rgba(${DARK_RGB},0.86)`,
           fontWeight: 600,
@@ -350,7 +350,7 @@ const MechanicDetails = () => {
               >
                 {mechanic.name}
               </h1>
-              <p style={{ ...bodyStyle, marginTop: '0.5rem', color: `rgba(${DARK_RGB},0.72)` }}>
+              <p style={{ ...bodyStyle, marginTop: '0.5rem', color: `rgba(${DARK_RGB},0.85)` }}>
                 {mechanic.email}
               </p>
               <span
@@ -362,7 +362,7 @@ const MechanicDetails = () => {
                   borderRadius: 2,
                   background: badge.background,
                   color: badge.color,
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: '0.78rem',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
@@ -383,7 +383,7 @@ const MechanicDetails = () => {
               border: 'none',
               borderRadius: 4,
               padding: '0.85rem 1.35rem',
-              fontFamily: "'Courier New', monospace",
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.88rem',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
@@ -435,8 +435,8 @@ const MechanicDetails = () => {
               padding: '0.36rem 0.8rem',
               borderRadius: 999,
               background: `rgba(${DARK_RGB},0.06)`,
-              color: `rgba(${DARK_RGB},0.74)`,
-              fontFamily: "'Courier New', monospace",
+              color: `rgba(${DARK_RGB},0.85)`,
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.8rem',
               letterSpacing: '0.04em',
               fontWeight: 700,
@@ -464,7 +464,7 @@ const MechanicDetails = () => {
             >
               <EmptyActivityIcon />
             </div>
-            <p style={{ ...bodyStyle, marginTop: '1.25rem', color: `rgba(${DARK_RGB},0.45)` }}>
+            <p style={{ ...bodyStyle, marginTop: '1.25rem', color: `rgba(${DARK_RGB},0.85)` }}>
               No service activity found.
             </p>
           </div>

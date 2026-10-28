@@ -95,13 +95,34 @@ All commands are defined in:
 - `src/config/permissions.js`
 
 ## Roles
-The system supports four roles:
+The system supports five roles:
 - `super_admin`: full system access (manage garages, approve garage admins, view all data).
 - `garage_admin`: manages a single garage and its service technicians; views garage work orders.
 - `service_technician`: handles service operations (register owners/vehicles, create/update work orders).
 - `car_owner`: views personal service history and job status.
+- `reseller`: brings garages with a referral code and earns a commission on their paid services (mobile app only).
 
 See `docs/garage-admin-activities.md` for the garage admin activity scope.
+
+## Resellers
+Resellers are created by the super admin (they cannot sign up). Each one gets a referral code and a
+commission setting: a percentage of the service payment, or a fixed RWF amount per paid service.
+
+- **Linking a garage:** the garage admin enters the code at sign-up (`referral_code` in `REGISTER_USER`),
+  or the super admin links it with `SET_GARAGE_RESELLER`. Commission counts from the moment of linking.
+- **Earning:** when a referred garage's service payment becomes `SUCCESS` (status check or webhook),
+  one row is added to `reseller_commissions`, with the rate used at that time. A service never earns twice,
+  and inactive resellers earn nothing.
+- **Payouts:** the reseller requests an amount up to their available balance (`REQUEST_RESELLER_PAYOUT`).
+  The super admin approves it, sends the money outside the app, then marks it paid
+  (`APPROVE_RESELLER_PAYOUT`, `MARK_RESELLER_PAYOUT_PAID`), or rejects it (`REJECT_RESELLER_PAYOUT`).
+  Available balance = total earned − paid − pending/approved requests.
+
+| Command | Role |
+| --- | --- |
+| `CREATE_RESELLER`, `LIST_RESELLERS`, `GET_RESELLER`, `UPDATE_RESELLER`, `SET_GARAGE_RESELLER` | super_admin |
+| `LIST_RESELLER_PAYOUTS`, `APPROVE_RESELLER_PAYOUT`, `REJECT_RESELLER_PAYOUT`, `MARK_RESELLER_PAYOUT_PAID` | super_admin |
+| `RESELLER_DASHBOARD`, `LIST_MY_RESELLER_COMMISSIONS`, `LIST_MY_RESELLER_PAYOUTS`, `REQUEST_RESELLER_PAYOUT`, `CANCEL_RESELLER_PAYOUT` | reseller |
 
 ## Environment Variables
 - `PORT` (default 5001)
@@ -112,6 +133,12 @@ See `docs/garage-admin-activities.md` for the garage admin activity scope.
 - `TRANSPIP_TENANT_API_KEY` (required for service payment collections)
 - `TRANSPIP_PAYMENT_TIMEOUT_MS` (optional; defaults to `15000`)
 - `TRANSPIP_WEBHOOK_SECRET` (optional; if set, TransPip webhooks must send it as `x-webhook-secret`, `x-transpip-webhook-secret`, or `?token=...`)
+- `RESELLER_MIN_PAYOUT` (optional; smallest payout a reseller can request in RWF, defaults to `1000`)
+- `APP_ENV` (optional; `testing` or `production` loads `.env.testing` / `.env.production`; see `docs/environments.md`)
+- `OIL_REMINDERS_ENABLED` (optional; `false` turns off automatic oil change reminders, default on)
+- `OIL_CHANGE_INTERVAL_DAYS` (optional; days until the next oil change when the service interval is in km, default `90`)
+- `OIL_CHANGE_NOTICE_DAYS` (optional; days before the due date to send the first reminder, default `7`)
+- `OIL_REMINDER_CHECK_HOURS` (optional; how often reminders are checked, default every `6` hours)
 - `DB_DIALECT` (default `mysql`)
 - `DB_HOST`
 - `DB_PORT` (default `3306`)

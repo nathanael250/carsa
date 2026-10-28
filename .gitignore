@@ -1,1 +1,9 @@
 /piper-car-sa-designs
+
+# Environment settings (testing / production) hold secrets; only the *.example files are committed
+.env.*
+!.env.*.example
+car_sa_admin_frontend/.env.*
+!car_sa_admin_frontend/.env.*.example
+piper-car-sa-designs/env/*.json
+!piper-car-sa-designs/env/*.example.json

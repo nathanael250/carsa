@@ -19,6 +19,9 @@ type IconKey =
   | 'requests'
   | 'reports'
   | 'revenue'
+  | 'resellers'
+  | 'payouts'
+  | 'code'
   | 'notifications'
   | 'settings'
   | 'logout'
@@ -44,6 +47,9 @@ const iconPaths: Record<IconKey, string> = {
   requests: 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
   reports: 'M4 19h16 M7 16V8 M12 16V5 M17 16v-4',
   revenue: 'M12 1v22 M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6',
+  resellers: 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z M19 8v6 M22 11h-6',
+  code: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h3v3h-3z M18 18h3v3h-3z M14 20h2 M20 14v2',
+  payouts: 'M2 7h20v10H2z M12 15a3 3 0 100-6 3 3 0 000 6z M6 11h.01 M18 13h.01',
   notifications: 'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0',
   settings: 'M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',
   logout: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4 M16 17l5-5-5-5 M21 12H9',
@@ -136,6 +142,9 @@ const DashboardLayout = () => {
     { name: 'Services', path: '/dashboard/services', icon: 'services' },
     { name: 'Oil Products', path: '/dashboard/oil-products', icon: 'oil' },
     { name: 'Revenue', path: '/dashboard/revenue', icon: 'revenue' },
+    { name: 'Resellers', path: '/dashboard/resellers', icon: 'resellers' },
+    { name: 'Payouts', path: '/dashboard/reseller-payouts', icon: 'payouts' },
+    { name: 'App Code', path: '/dashboard/app-code', icon: 'code' },
   ];
 
   const garageAdminNav: NavItem[] = [
@@ -217,7 +226,7 @@ const DashboardLayout = () => {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: '#eef1f4',
+        background: '#e9edf2',
       }}
     >
       {!isDesktop && mobileSidebarOpen ? (
@@ -279,8 +288,8 @@ const DashboardLayout = () => {
               <p
                 style={{
                   margin: 0,
-                  fontFamily: "'Courier New', monospace",
-                  color: 'rgba(255,255,255,0.72)',
+                  fontFamily: 'var(--font-sans)',
+                  color: 'rgba(255,255,255,0.85)',
                   fontSize: '0.84rem',
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
@@ -306,7 +315,7 @@ const DashboardLayout = () => {
         >
           {navItems.map((item) => {
             const isActive = matchesPath(location.pathname, item.path);
-            const iconColor = isActive ? BRAND : 'rgba(255,255,255,0.68)';
+            const iconColor = isActive ? BRAND : 'rgba(255,255,255,0.85)';
 
             return (
               <button
@@ -321,7 +330,7 @@ const DashboardLayout = () => {
                   border: 'none',
                   borderRadius: 3,
                   background: isActive ? `rgba(${BRAND_RGB},0.14)` : 'transparent',
-                  color: isActive ? BRAND : 'rgba(255,255,255,0.82)',
+                  color: isActive ? BRAND : 'rgba(255,255,255,0.95)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   position: 'relative',
@@ -359,7 +368,7 @@ const DashboardLayout = () => {
                 {sidebarExpanded || !isDesktop ? (
                   <span
                     style={{
-                      fontFamily: "'Courier New', monospace",
+                      fontFamily: 'var(--font-sans)',
                       fontSize: '0.96rem',
                       letterSpacing: '0.05em',
                       textTransform: 'uppercase',
@@ -432,7 +441,7 @@ const DashboardLayout = () => {
             >
               <span
                 style={{
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: '0.68rem',
                   color: BRAND,
                   fontWeight: 'bold',
@@ -448,7 +457,7 @@ const DashboardLayout = () => {
                 <p
                   style={{
                     margin: 0,
-                    fontFamily: "'Courier New', monospace",
+                    fontFamily: 'var(--font-sans)',
                     fontSize: '0.96rem',
                     color: '#fff',
                     fontWeight: 600,
@@ -462,7 +471,7 @@ const DashboardLayout = () => {
                 <p
                   style={{
                     margin: 0,
-                    fontFamily: "'Courier New', monospace",
+                    fontFamily: 'var(--font-sans)',
                     fontSize: '0.8rem',
                     color: 'rgba(255,255,255,0.9)',
                     letterSpacing: '0.04em',
@@ -488,15 +497,15 @@ const DashboardLayout = () => {
               border: 'none',
               borderRadius: 3,
               background: 'rgba(255,255,255,0.04)',
-              color: 'rgba(255,255,255,0.82)',
+              color: 'rgba(255,255,255,0.95)',
               cursor: 'pointer',
             }}
           >
-            <DashboardIcon name="logout" size={17} color="rgba(255,255,255,0.82)" />
+            <DashboardIcon name="logout" size={17} color="rgba(255,255,255,0.95)" />
             {sidebarExpanded || !isDesktop ? (
               <span
                 style={{
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: '0.92rem',
                   letterSpacing: '0.05em',
                   textTransform: 'uppercase',
@@ -517,7 +526,7 @@ const DashboardLayout = () => {
           flexDirection: 'column',
           minWidth: 0,
           minHeight: '100vh',
-          fontFamily: "'Courier New', monospace",
+          fontFamily: 'var(--font-sans)',
         }}
       >
         <header
@@ -566,7 +575,7 @@ const DashboardLayout = () => {
               <p
                 style={{
                   margin: 0,
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: '0.86rem',
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
@@ -598,7 +607,7 @@ const DashboardLayout = () => {
             <span
               className="hidden sm:inline"
               style={{
-                fontFamily: "'Courier New', monospace",
+                fontFamily: 'var(--font-sans)',
                 fontSize: '0.92rem',
                 color: `rgba(${DARK_RGB},0.94)`,
                 letterSpacing: '0.04em',
@@ -659,7 +668,7 @@ const DashboardLayout = () => {
             flex: 1,
             padding: '1.25rem 1rem 1.75rem',
             overflowY: 'auto',
-            fontFamily: "'Courier New', monospace",
+            fontFamily: 'var(--font-sans)',
           }}
           className="sm:px-5 sm:py-6 lg:px-8"
         >

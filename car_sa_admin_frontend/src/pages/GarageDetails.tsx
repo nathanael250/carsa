@@ -56,7 +56,7 @@ interface ServiceItem {
 }
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "'Courier New', monospace",
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.84rem',
   letterSpacing: '0.1em',
   textTransform: 'uppercase',
@@ -66,7 +66,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const bodyStyle: React.CSSProperties = {
-  fontFamily: "'Courier New', monospace",
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.96rem',
   color: `rgba(${DARK_RGB},0.94)`,
   fontWeight: 500,
@@ -212,7 +212,7 @@ const GarageDetails = () => {
         <button
           onClick={() => navigate(-1)}
           style={{
-            fontFamily: "'Courier New', monospace",
+            fontFamily: 'var(--font-sans)',
             fontSize: '0.92rem',
             color: `rgba(${DARK_RGB},0.9)`,
             fontWeight: 600,
@@ -286,7 +286,7 @@ const GarageDetails = () => {
         onClick={() => navigate(-1)}
         className="flex items-center gap-2"
         style={{
-          fontFamily: "'Courier New', monospace",
+          fontFamily: 'var(--font-sans)',
           fontSize: '0.92rem',
           color: `rgba(${DARK_RGB},0.86)`,
           fontWeight: 600,
@@ -315,7 +315,7 @@ const GarageDetails = () => {
             >
               {garage.name}
             </h1>
-            <p style={{ ...bodyStyle, marginTop: '0.5rem', color: `rgba(${DARK_RGB},0.72)` }}>
+            <p style={{ ...bodyStyle, marginTop: '0.5rem', color: `rgba(${DARK_RGB},0.85)` }}>
               {garage.city}, {garage.country}
             </p>
           </div>
@@ -361,8 +361,8 @@ const GarageDetails = () => {
               padding: '0.36rem 0.8rem',
               borderRadius: 999,
               background: `rgba(${DARK_RGB},0.06)`,
-              color: `rgba(${DARK_RGB},0.74)`,
-              fontFamily: "'Courier New', monospace",
+              color: `rgba(${DARK_RGB},0.85)`,
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.8rem',
               letterSpacing: '0.04em',
               fontWeight: 700,
@@ -388,12 +388,12 @@ const GarageDetails = () => {
                 justifyContent: 'center',
                 fontFamily: "'Impact', sans-serif",
                 fontSize: '1.1rem',
-                color: `rgba(${DARK_RGB},0.38)`,
+                color: `rgba(${DARK_RGB},0.85)`,
               }}
             >
               G
             </div>
-            <p style={{ ...bodyStyle, marginTop: '1.25rem', color: `rgba(${DARK_RGB},0.45)` }}>
+            <p style={{ ...bodyStyle, marginTop: '1.25rem', color: `rgba(${DARK_RGB},0.85)` }}>
               No garage activity found.
             </p>
           </div>
@@ -484,15 +484,15 @@ const GarageDetails = () => {
               >
                 <div>
                   <p style={{ ...bodyStyle, color: DARK, textTransform: 'capitalize' }}>
-                    {doc.doc_type || 'Document'}
+                    {doc.doc_type === 'national_id' ? 'ID Document' : (doc.doc_type || 'Document').replace(/_/g, ' ')}
                   </p>
                   {doc.issued_date && (
-                    <p style={{ ...bodyStyle, marginTop: '0.25rem', fontSize: '0.84rem', color: `rgba(${DARK_RGB},0.72)` }}>
+                    <p style={{ ...bodyStyle, marginTop: '0.25rem', fontSize: '0.84rem', color: `rgba(${DARK_RGB},0.85)` }}>
                       Issued: {formatDate(doc.issued_date)}
                     </p>
                   )}
                   {doc.expiry_date && (
-                    <p style={{ ...bodyStyle, marginTop: '0.15rem', fontSize: '0.84rem', color: `rgba(${DARK_RGB},0.72)` }}>
+                    <p style={{ ...bodyStyle, marginTop: '0.15rem', fontSize: '0.84rem', color: `rgba(${DARK_RGB},0.85)` }}>
                       Expires: {formatDate(doc.expiry_date)}
                     </p>
                   )}
@@ -503,7 +503,7 @@ const GarageDetails = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      fontFamily: "'Courier New', monospace",
+                      fontFamily: 'var(--font-sans)',
                       fontSize: '0.88rem',
                       fontWeight: 700,
                       color: BRAND,

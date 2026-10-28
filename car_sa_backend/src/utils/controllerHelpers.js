@@ -18,6 +18,15 @@ const sendResponse = (res, result) => {
 };
 
 const handleError = (res, err) => {
+    // A unique field (like an email) taken at the same moment by another request: never leak the raw SQL error.
+    if (err.name === 'SequelizeUniqueConstraintError') {
+        const field = err.errors?.[0]?.path;
+        return res.status(409).json({
+            error: field === 'email'
+                ? 'An account with this email already exists. Please log in instead.'
+                : 'This record already exists.',
+        });
+    }
     const statusCode = err.statusCode || err.status || 500;
     const payload = {
         error: err.original?.message || err.message || 'Unexpected error',

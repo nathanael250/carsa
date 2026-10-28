@@ -133,7 +133,7 @@ const icons = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "'Courier New', monospace",
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.86rem',
   letterSpacing: '0.1em',
   textTransform: 'uppercase',
@@ -142,7 +142,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const bodyTextStyle: React.CSSProperties = {
-  fontFamily: "'Courier New', monospace",
+  fontFamily: 'var(--font-sans)',
   fontSize: '0.96rem',
   color: `rgba(${DARK_RGB},0.96)`,
   lineHeight: 1.8,
@@ -232,7 +232,7 @@ const Panel = ({ label, action, onAction, children }: PanelProps) => (
         <button
           onClick={onAction}
           style={{
-            fontFamily: "'Courier New', monospace",
+            fontFamily: 'var(--font-sans)',
             fontSize: '0.84rem',
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
@@ -277,7 +277,7 @@ const MiniBarChart = ({ items }: { items: ChartDatum[] }) => {
                     top: -18,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    fontFamily: "'Courier New', monospace",
+                    fontFamily: 'var(--font-sans)',
                     fontSize: '0.8rem',
                     color: BRAND,
                     whiteSpace: 'nowrap',
@@ -291,7 +291,7 @@ const MiniBarChart = ({ items }: { items: ChartDatum[] }) => {
           </div>
           <span
             style={{
-              fontFamily: "'Courier New', monospace",
+              fontFamily: 'var(--font-sans)',
               fontSize: '0.82rem',
               color: `rgba(${DARK_RGB},0.92)`,
               letterSpacing: '0.04em',
@@ -316,7 +316,7 @@ const ProgressSummary = ({ items }: { items: ProgressDatum[] }) => {
           <div className="mb-1.5 flex items-center justify-between gap-3">
             <span
               style={{
-                fontFamily: "'Courier New', monospace",
+                fontFamily: 'var(--font-sans)',
                 fontSize: '0.96rem',
                 color: `rgba(${DARK_RGB},0.96)`,
                 fontWeight: 500,
@@ -326,7 +326,7 @@ const ProgressSummary = ({ items }: { items: ProgressDatum[] }) => {
             </span>
             <span
               style={{
-                fontFamily: "'Courier New', monospace",
+                fontFamily: 'var(--font-sans)',
                 fontSize: '0.96rem',
                 color: DARK,
                 fontWeight: 'bold',
@@ -411,7 +411,7 @@ const getStatusTone = (status?: string): StatusTone => {
 
   return {
     background: `rgba(${DARK_RGB},0.08)`,
-    color: `rgba(${DARK_RGB},0.72)`,
+    color: `rgba(${DARK_RGB},0.85)`,
     label: status || 'Unknown',
   };
 };
@@ -424,7 +424,7 @@ const StatusBadge = ({ status }: { status?: string }) => {
       style={{
         background: tone.background,
         color: tone.color,
-        fontFamily: "'Courier New', monospace",
+        fontFamily: 'var(--font-sans)',
         fontSize: '0.8rem',
         letterSpacing: '0.07em',
         textTransform: 'uppercase',
@@ -892,7 +892,7 @@ const Dashboard = () => {
                               ...bodyTextStyle,
                               margin: '0.45rem 0 0',
                               fontSize: '0.9rem',
-                              color: `rgba(${DARK_RGB},0.72)`,
+                              color: `rgba(${DARK_RGB},0.85)`,
                             }}
                           >
                             {owner.email || 'No email'}
@@ -905,7 +905,7 @@ const Dashboard = () => {
                             borderRadius: 999,
                             background: `rgba(${BRAND_RGB},0.12)`,
                             color: BRAND,
-                            fontFamily: "'Courier New', monospace",
+                            fontFamily: 'var(--font-sans)',
                             fontSize: '0.8rem',
                             letterSpacing: '0.04em',
                             fontWeight: 700,

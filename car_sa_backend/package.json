@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "db:repair-indexes": "node scripts/repair-duplicate-indexes.js",
-    "migrate:pg-to-mysql": "node scripts/migrate-postgres-to-mysql.js"
+    "migrate:pg-to-mysql": "node scripts/migrate-postgres-to-mysql.js",
+    "start": "node src/server.js",
+    "start:testing": "APP_ENV=testing node src/server.js",
+    "start:production": "APP_ENV=production node src/server.js",
+    "dev:testing": "APP_ENV=testing nodemon src/server.js"
   },
   "keywords": [],
   "author": "",

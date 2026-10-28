@@ -4,11 +4,25 @@
   --color-primary-dark: #2F4858;
   --color-primary-orange-light: #FEA14C;
   --color-primary-orange-dark: #FE8A21;
+
+  /* Readable sans-serif for the whole dashboard. */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+
+  /* Darker grays than Tailwind's defaults: secondary text and borders were too light to read.
+     Each step is roughly one to two shades darker; 50/100 stay light for backgrounds. */
+  --color-gray-200: #d4d8df;
+  --color-gray-300: #b9c0cb;
+  --color-gray-400: #868e9c;
+  --color-gray-500: #4b5563;
+  --color-gray-600: #374151;
+  --color-gray-700: #1f2937;
+  --color-gray-800: #111827;
+  --color-gray-900: #0b1220;
 }
 
 @layer base {
 body {
-    @apply font-sans antialiased;
+    @apply font-sans antialiased text-gray-900;
 }
   
   #root {

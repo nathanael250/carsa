@@ -1,4 +1,4 @@
-require('dotenv').config();
+const {environment} = require('./config/env');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -26,9 +26,16 @@ require('./models/OilProduct');
 require('./models/PushDeviceToken');
 require('./models/Service');
 require('./models/BusinessDocument');
+require('./models/Reseller');
+require('./models/VehicleTransfer');
+const OilChangeReminder = require('./models/OilChangeReminder');
 
 (async () => {
     await connectDB();
+    // Not in tests or scripts that only import the app: only when the server process starts.
+    if (require.main && /server\.js$/.test(require.main.filename)) {
+        OilChangeReminder.startScheduler();
+    }
 })();
 
 
@@ -37,7 +44,7 @@ const paymentWebhookRoutes = require('./routes/paymentWebhook.routes');
 const path = require('path');
 
 app.get('/health', (req, res) => {
-    res.status(200).json({status: 'ok'});
+    res.status(200).json({status: 'ok', environment});
 });
 
 // Serve uploaded files statically

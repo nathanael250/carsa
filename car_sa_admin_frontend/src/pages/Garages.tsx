@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { authUtils } from '../utils/auth';
+import { COUNTRIES, ID_DOCUMENT } from '../utils/countries';
+import CreateGarageAccountModal from '../components/CreateGarageAccountModal';
 
 interface Garage {
   id: number;
@@ -34,12 +36,8 @@ interface OnboardingDocument {
   expiry_date: string;
 }
 
-const REQUIRED_DOCUMENTS: Array<{ type: string; label: string }> = [
-  { type: 'business_license', label: 'Business License' },
-  { type: 'registration_certificate', label: 'Registration Certificate' },
-  { type: 'tax_clearance', label: 'Tax Clearance' },
-  { type: 'insurance', label: 'Insurance' },
-];
+// Only the owner's ID is required to register a garage.
+const REQUIRED_DOCUMENTS: Array<{ type: string; label: string }> = [ID_DOCUMENT];
 
 const createInitialDocuments = (): OnboardingDocument[] =>
   REQUIRED_DOCUMENTS.map((doc) => ({
@@ -71,6 +69,8 @@ const Garages = () => {
     registration_number: '',
   });
   const [documents, setDocuments] = useState<OnboardingDocument[]>(createInitialDocuments());
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGarages();
@@ -182,7 +182,7 @@ const Garages = () => {
 
     const missingDocs = documents.filter((doc) => !doc.url);
     if (missingDocs.length > 0) {
-      setOnboardingError('All required business documents must be uploaded.');
+      setOnboardingError('Please upload the ID document.');
       return;
     }
 
@@ -253,7 +253,19 @@ const Garages = () => {
             Onboard New Garage
           </button>
         )}
+        {!isGarageAdmin && (
+          <button
+            onClick={() => setShowCreateAccount(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#FEA14C] hover:bg-[#FE8A21] text-white rounded-lg text-sm font-medium"
+          >
+            + Create garage account
+          </button>
+        )}
       </div>
+
+      {successMessage && (
+        <div className="bg-green-50 border border-green-300 text-green-800 px-4 py-3 rounded-lg">{successMessage}</div>
+      )}
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -371,13 +383,24 @@ const Garages = () => {
         )}
       </div>
 
+      {showCreateAccount && (
+        <CreateGarageAccountModal
+          onClose={() => setShowCreateAccount(false)}
+          onCreated={(message) => {
+            setShowCreateAccount(false);
+            setSuccessMessage(message);
+            void fetchGarages();
+          }}
+        />
+      )}
+
       {showOnboardingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
           <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Onboard New Garage</h2>
-                <p className="text-sm text-gray-500">Add garage profile and upload required business documents.</p>
+                <p className="text-sm text-gray-500">Add the garage profile and upload the owner's ID document.</p>
               </div>
               <button
                 onClick={closeOnboardingModal}
@@ -437,18 +460,23 @@ const Garages = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Country</label>
-                    <input
-                      type="text"
+                    <select
                       value={garageForm.country}
                       onChange={(e) => setGarageForm((prev) => ({ ...prev, country: e.target.value }))}
                       className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEA14C] focus:border-transparent"
-                    />
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country} value={country}>
+                          {country}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Required Business Documents</h3>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">ID Document</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {documents.map((doc, index) => (
                     <div key={doc.type} className="border border-gray-200 rounded-lg p-4">

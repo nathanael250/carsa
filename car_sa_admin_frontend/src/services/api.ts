@@ -53,6 +53,85 @@ export interface RevenueReportData {
   offset: number;
 }
 
+export type CommissionType = 'percentage' | 'fixed';
+export type PayoutStatus = 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled';
+
+export interface ResellerBalance {
+  total_earned: number;
+  commissions_count: number;
+  paid_out: number;
+  pending_payouts: number;
+  available_balance: number;
+}
+
+export interface Reseller extends ResellerBalance {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  active: boolean;
+  created_at: string;
+  referral_code: string;
+  commission_type: CommissionType;
+  commission_value: number;
+  notes?: string | null;
+  referred_garages_count: number;
+}
+
+export interface ResellerGarage {
+  garage_admin_id: number;
+  owner_name: string;
+  owner_email?: string;
+  owner_phone?: string | null;
+  approved: boolean;
+  referred_at?: string | null;
+  garage_id: number | null;
+  garage_name: string | null;
+  city: string | null;
+  total_earned: number;
+  paid_services_count: number;
+}
+
+export interface ResellerCommission {
+  id: number;
+  service_id: number;
+  garage_id: number;
+  base_amount: number;
+  commission_type: CommissionType;
+  commission_value: number | string;
+  amount: number;
+  earned_at: string;
+  garage?: { id: number; name: string } | null;
+}
+
+export interface ResellerPayout {
+  id: number;
+  reseller_user_id: number;
+  amount: number;
+  method: 'mobile_money' | 'bank';
+  account_name: string;
+  account_number: string;
+  bank_name?: string | null;
+  status: PayoutStatus;
+  reseller_note?: string | null;
+  admin_note?: string | null;
+  payment_reference?: string | null;
+  reviewed_at?: string | null;
+  paid_at?: string | null;
+  created_at: string;
+  reseller?: { id: number; name: string; email: string; phone?: string | null } | null;
+  reviewed_by?: { id: number; name: string } | null;
+}
+
+export interface ResellerDetailsData {
+  currency: string;
+  reseller: Reseller;
+  garages: ResellerGarage[];
+  commissions: ResellerCommission[];
+  commissions_total: number;
+  payouts: ResellerPayout[];
+}
+
 class ApiService {
   private isPublicAuthCommand(command: string): boolean {
     return (
@@ -434,6 +513,27 @@ class ApiService {
     });
   }
 
+  /** Super admin: creates the owner's login and the garage together, already approved. */
+  async createGarageAccount(payload: {
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+    referral_code?: string;
+    garage: {
+      name: string;
+      address?: string;
+      city?: string;
+      country?: string;
+      registration_number?: string;
+    };
+    documents?: Array<{ type: string; url: string }>;
+  }) {
+    return this.requestCommand<{ message: string; user: any; garage: any }>('CREATE_GARAGE_ACCOUNT', {
+      body: payload,
+    });
+  }
+
   async listPendingGarageAdmins() {
     return this.requestCommand<any[]>('LIST_PENDING_GARAGE_ADMINS', { body: {} });
   }
@@ -734,6 +834,91 @@ class ApiService {
   async deleteNotification(id: number) {
     return this.requestCommand<{ message: string }>('DELETE_NOTIFICATION', {
       body: {},
+      params: { id },
+    });
+  }
+
+  async listResellers(search?: string) {
+    return this.requestCommand<{
+      currency: string;
+      resellers: Reseller[];
+      totals: { total_earned: number; paid_out: number; pending_payouts: number; available_balance: number };
+    }>('LIST_RESELLERS', { body: {}, query: { search: search || undefined } });
+  }
+
+  async getReseller(id: number) {
+    return this.requestCommand<ResellerDetailsData>('GET_RESELLER', { body: {}, params: { id } });
+  }
+
+  async createReseller(payload: {
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+    commission_type: CommissionType;
+    commission_value: number;
+    notes?: string;
+  }) {
+    return this.requestCommand<{ reseller: Reseller; message: string }>('CREATE_RESELLER', { body: payload });
+  }
+
+  async updateReseller(
+    id: number,
+    payload: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+      active?: boolean;
+      commission_type?: CommissionType;
+      commission_value?: number;
+      notes?: string;
+    }
+  ) {
+    return this.requestCommand<{ reseller: Reseller; message: string }>('UPDATE_RESELLER', {
+      body: payload,
+      params: { id },
+    });
+  }
+
+  async setGarageReseller(garageId: number, resellerId: number | null) {
+    return this.requestCommand<{ message: string; garage_id: number; reseller_id: number | null }>(
+      'SET_GARAGE_RESELLER',
+      { body: { reseller_id: resellerId }, params: { garage_id: garageId } }
+    );
+  }
+
+  async listResellerPayouts(params?: { status?: string; reseller_id?: number; limit?: number; offset?: number }) {
+    return this.requestCommand<{
+      currency: string;
+      payouts: ResellerPayout[];
+      total: number;
+      pending_count: number;
+      limit: number;
+      offset: number;
+    }>('LIST_RESELLER_PAYOUTS', {
+      body: {},
+      query: {
+        status: params?.status || undefined,
+        reseller_id: params?.reseller_id,
+        limit: params?.limit,
+        offset: params?.offset,
+      },
+    });
+  }
+
+  async reviewResellerPayout(
+    id: number,
+    action: 'approve' | 'reject' | 'mark_paid',
+    payload: { admin_note?: string; payment_reference?: string } = {}
+  ) {
+    const command = {
+      approve: 'APPROVE_RESELLER_PAYOUT',
+      reject: 'REJECT_RESELLER_PAYOUT',
+      mark_paid: 'MARK_RESELLER_PAYOUT_PAID',
+    }[action];
+    return this.requestCommand<{ payout: ResellerPayout; message: string }>(command, {
+      body: payload,
       params: { id },
     });
   }

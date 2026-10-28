@@ -119,6 +119,19 @@ function updateServicePaymentFromStatus(service, data) {
     }
 }
 
+// Earns the referring reseller's commission once a payment is confirmed. It never fails the payment itself.
+async function recordResellerCommission(service) {
+    if (service.payment_status !== 'SUCCESS') {
+        return;
+    }
+    try {
+        const Reseller = require('./Reseller');
+        await Reseller.recordCommissionForService(service);
+    } catch (error) {
+        console.error(`Failed to record reseller commission for service ${service.id}:`, error);
+    }
+}
+
 async function assertCanManageServicePayment(service, user) {
     if (user.role === 'car_owner') {
         throw createHttpError('Car owners cannot manage service payments. Please contact the garage.', 403);
@@ -750,7 +763,11 @@ Service.initiatePayment = async ({params, body, user}) => {
     service.payment_provider_ref = response.providerRef || response.provider_ref || service.payment_provider_ref;
     service.payment_fail_reason = null;
     service.actual_cost = parsedAmount;
+    if (service.payment_status === 'SUCCESS' && !service.paid_at) {
+        service.paid_at = new Date();
+    }
     await service.save();
+    await recordResellerCommission(service);
 
     const updatedService = await Service.findByPk(service.id, {include: serviceInclude});
 
@@ -781,6 +798,7 @@ Service.checkPaymentStatus = async ({params, user}) => {
     const response = await checkCollectionStatus(service.payment_collection_id);
     updateServicePaymentFromStatus(service, response);
     await service.save();
+    await recordResellerCommission(service);
 
     const updatedService = await Service.findByPk(service.id, {include: serviceInclude});
 
@@ -821,6 +839,7 @@ Service.deleteService = async ({params, user}) => {
             const response = await checkCollectionStatus(service.payment_collection_id);
             updateServicePaymentFromStatus(service, response);
             await service.save();
+            await recordResellerCommission(service);
         } catch (error) {
             console.error(`Could not refresh payment for service ${service.id} before delete:`, error.message);
         }
@@ -873,6 +892,7 @@ Service.applyPaymentWebhook = async (payload) => {
 
     updateServicePaymentFromStatus(service, payload);
     await service.save();
+    await recordResellerCommission(service);
 
     return {
         matched: true,

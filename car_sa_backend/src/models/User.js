@@ -19,13 +19,16 @@ const User = sequelize.define('User', {
 
     date_of_birth: {type: DataTypes.DATE, allowNull: true},
     gender: {type: DataTypes.STRING(10), allowNull: true},
-    role: {type: DataTypes.ENUM('super_admin', 'garage_admin', 'service_technician', 'car_owner'), allowNull: false, defaultValue: 'car_owner'},
+    role: {type: DataTypes.ENUM('super_admin', 'garage_admin', 'service_technician', 'car_owner', 'reseller'), allowNull: false, defaultValue: 'car_owner'},
     password_hash: {type: DataTypes.TEXT, allowNull: false},
     garage_id: {type: DataTypes.INTEGER, allowNull: true},
     active: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true},
     approved: {type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true},
     approved_at: {type: DataTypes.DATE, allowNull: true},
     approved_by_user_id: {type: DataTypes.INTEGER, allowNull: true},
+    // Garage admins only: the reseller who referred them, and when the link started (commission counts from then).
+    referred_by_reseller_id: {type: DataTypes.INTEGER, allowNull: true},
+    referred_at: {type: DataTypes.DATE, allowNull: true},
 }, {
     tableName: 'users',
     underscored: true,
@@ -52,6 +55,7 @@ User.register = async ({body}) => {
             role = 'car_owner',
             garage,
             documents,
+            referral_code,
         } = body || {};
 
         if (role !== 'car_owner' && role !== 'garage_admin') {
@@ -62,12 +66,28 @@ User.register = async ({body}) => {
             throw createHttpError('Name, email, and password are required', 400);
         }
 
+        // 409 tells the app to send the person to the login page.
+        const existingUser = await User.findOne({where: {email: String(email).trim()}, transaction});
+        if (existingUser) {
+            throw createHttpError('An account with this email already exists. Please log in instead.', 409);
+        }
+
         if (role === 'garage_admin') {
             if (!garage) {
                 throw createHttpError('Garage information is required', 400);
             }
             if (!Array.isArray(documents) || documents.length === 0) {
                 throw createHttpError('At least one business document is required', 400);
+            }
+        }
+
+        // Only garage admins can be referred by a reseller.
+        let referringReseller = null;
+        if (role === 'garage_admin' && referral_code && String(referral_code).trim()) {
+            const Reseller = require('./Reseller');
+            referringReseller = await Reseller.findActiveByReferralCode(referral_code, {transaction});
+            if (!referringReseller) {
+                throw createHttpError('Referral code not found. Check the code or leave it empty.', 400);
             }
         }
 
@@ -85,6 +105,8 @@ User.register = async ({body}) => {
             password_hash: hashedPassword,
             email_verified: !emailEnabled,
             approved: role === 'garage_admin' ? false : true,
+            referred_by_reseller_id: referringReseller ? referringReseller.user_id : null,
+            referred_at: referringReseller ? new Date() : null,
         }, {transaction});
 
         let verificationCode = null;
@@ -566,13 +588,17 @@ User.createGarageAdmin = async ({body, user}) => {
         role: 'garage_admin',
         password_hash: hashedPassword,
         garage_id: garage_id || null,
-        approved: false,
+        // Created by the super admin, so no separate approval or email check is needed.
+        approved: true,
+        approved_at: new Date(),
+        approved_by_user_id: user.id,
+        email_verified: true,
     });
 
     return {
         status: 201,
         data: {
-            message: 'Garage admin created successfully. Awaiting approval.',
+            message: 'Garage admin created and approved.',
             user: {
                 id: newAdmin.id,
                 name: newAdmin.name,
@@ -581,6 +607,102 @@ User.createGarageAdmin = async ({body, user}) => {
                 approved: newAdmin.approved,
                 garage_id: newAdmin.garage_id,
             },
+        },
+    };
+};
+
+/**
+ * Super admin: creates a garage owner's login and their garage in one step, already approved.
+ * The owner can log in straight away with the password the admin set.
+ */
+User.createGarageAccount = async ({body, user}) => {
+    const {
+        name,
+        email,
+        phone,
+        password,
+        garage,
+        documents,
+        referral_code,
+    } = body || {};
+
+    if (!name || !email || !password) {
+        throw createHttpError('Owner name, email, and password are required', 400);
+    }
+    if (String(password).length < 6) {
+        throw createHttpError('Password must be at least 6 characters', 400);
+    }
+    if (!garage?.name || !String(garage.name).trim()) {
+        throw createHttpError('Garage name is required', 400);
+    }
+
+    const normalizedEmail = String(email).trim();
+    const existing = await User.findOne({where: {email: normalizedEmail}});
+    if (existing) {
+        throw createHttpError('An account with this email already exists.', 409);
+    }
+
+    let referringReseller = null;
+    if (referral_code && String(referral_code).trim()) {
+        const Reseller = require('./Reseller');
+        referringReseller = await Reseller.findActiveByReferralCode(referral_code);
+        if (!referringReseller) {
+            throw createHttpError('Referral code not found. Check the code or leave it empty.', 400);
+        }
+    }
+
+    const now = new Date();
+    const result = await sequelize.transaction(async (transaction) => {
+        const owner = await User.create({
+            name: String(name).trim(),
+            email: normalizedEmail,
+            phone: phone || null,
+            role: 'garage_admin',
+            password_hash: await bcrypt.hash(String(password), 10),
+            email_verified: true,
+            approved: true,
+            approved_at: now,
+            approved_by_user_id: user.id,
+            referred_by_reseller_id: referringReseller ? referringReseller.user_id : null,
+            referred_at: referringReseller ? now : null,
+        }, {transaction});
+
+        const garageRecord = await Garage.create({
+            owner_user_id: owner.id,
+            name: String(garage.name).trim(),
+            address: garage.address || null,
+            city: garage.city || null,
+            country: garage.country || 'Rwanda',
+            registration_number: garage.registration_number || null,
+        }, {transaction});
+
+        const docs = Array.isArray(documents) ? documents.filter(doc => doc && (doc.file_path || doc.url)) : [];
+        if (docs.length > 0) {
+            await BusinessDocument.bulkCreate(docs.map(doc => ({
+                garage_id: garageRecord.id,
+                doc_type: doc.doc_type || doc.type || 'national_id',
+                file_path: doc.file_path || doc.url,
+                issued_date: doc.issued_date,
+                expiry_date: doc.expiry_date,
+            })), {transaction});
+        }
+
+        await owner.update({garage_id: garageRecord.id}, {transaction});
+        return {owner, garageRecord};
+    });
+
+    return {
+        status: 201,
+        data: {
+            message: 'Garage account created and approved. The owner can log in now.',
+            user: {
+                id: result.owner.id,
+                name: result.owner.name,
+                email: result.owner.email,
+                role: result.owner.role,
+                approved: true,
+            },
+            garage: result.garageRecord,
         },
     };
 };
@@ -969,6 +1091,10 @@ User.deleteUserWhithAllDetails = async ({params}) => {
             throw createHttpError('User not found', 404);
         }
 
+        if (user.role === 'reseller') {
+            await deleteResellerRecords(user.id, transaction);
+        }
+
         if (user.garage) {
             if (user.garage.documents && user.garage.documents.length > 0) {
                 await BusinessDocument.destroy({
@@ -1024,6 +1150,29 @@ User.deleteMyAccount = async ({user}) => {
 
     return deleteAccountWithDetails(user.id);
 };
+
+// A reseller with earnings or payouts keeps their money history: deactivate them instead.
+async function deleteResellerRecords(userId, transaction) {
+    const Reseller = require('./Reseller');
+    const ResellerCommission = require('./ResellerCommission');
+    const ResellerPayout = require('./ResellerPayout');
+
+    const [commissions, payouts] = await Promise.all([
+        ResellerCommission.count({where: {reseller_user_id: userId}, transaction}),
+        ResellerPayout.count({where: {reseller_user_id: userId}, transaction}),
+    ]);
+    if (commissions > 0 || payouts > 0) {
+        throw createHttpError('This reseller has earnings or payouts, so it cannot be deleted. Deactivate it instead.', 400);
+    }
+
+    await User.update(
+        {referred_by_reseller_id: null, referred_at: null},
+        {where: {referred_by_reseller_id: userId}, transaction}
+    );
+    await Reseller.destroy({where: {user_id: userId}, transaction});
+    await require('./Notification').destroy({where: {user_id: userId}, transaction});
+    await require('./PushDeviceToken').destroy({where: {user_id: userId}, transaction});
+}
 
 async function deleteAccountWithDetails(userId) {
     const Vehicle = require('./Vehicle');

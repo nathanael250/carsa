@@ -35,7 +35,7 @@ const InputField = ({
     <div className="flex flex-col gap-1.5">
       <label
         style={{
-          fontFamily: "'Courier New', monospace",
+          fontFamily: 'var(--font-sans)',
           fontSize: "0.8125rem",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
@@ -64,7 +64,7 @@ const InputField = ({
             border: `1.5px solid ${focused ? BRAND : "#8996A0"}`,
             borderRadius: "2px",
             outline: "none",
-            fontFamily: "'Courier New', monospace",
+            fontFamily: 'var(--font-sans)',
             fontSize: "0.88rem",
             color: "#2F4858",
             transition: "all 0.2s ease",
@@ -223,7 +223,7 @@ export default function LoginPage() {
         <div className="relative z-10">
           <div
             style={{
-              fontFamily: "'Courier New', monospace",
+              fontFamily: 'var(--font-sans)',
               fontSize: "0.875rem",
               letterSpacing: "0.18em",
               color: `rgba(${BR},0.96)`,
@@ -252,7 +252,7 @@ export default function LoginPage() {
           </h2>
           <p
             style={{
-              fontFamily: "'Courier New', monospace",
+              fontFamily: 'var(--font-sans)',
               fontSize: "0.94rem",
               color: "rgba(255,255,255,0.74)",
               lineHeight: 2,
@@ -268,7 +268,7 @@ export default function LoginPage() {
           {[["Live", "Garage Records"], ["Next", "Service Alerts"], ["Daily", "Follow-Up"]].map(([val, lbl]) => (
             <div key={lbl}>
               <div style={{ fontFamily: "'Impact', sans-serif", color: BRAND, fontSize: "1.6rem", lineHeight: 1 }}>{val}</div>
-              <div style={{ fontFamily: "'Courier New', monospace", fontSize: "0.7rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.62)", textTransform: "uppercase", marginTop: "0.35rem" }}>{lbl}</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: "0.7rem", letterSpacing: "0.1em", color: "rgba(255,255,255,0.62)", textTransform: "uppercase", marginTop: "0.35rem" }}>{lbl}</div>
             </div>
           ))}
         </div>
@@ -289,7 +289,7 @@ export default function LoginPage() {
           </Link>
 
           <div className="mb-9">
-            <p style={{ fontFamily: "'Courier New', monospace", fontSize: "0.82rem", letterSpacing: "0.14em", color: "#9A4700", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: "0.82rem", letterSpacing: "0.14em", color: "#9A4700", textTransform: "uppercase", marginBottom: "0.75rem" }}>
               ● Member Access
             </p>
             <h1
@@ -305,7 +305,7 @@ export default function LoginPage() {
             >
               WELCOME <span style={{ color: BRAND }}>BACK</span>
             </h1>
-            <p style={{ fontFamily: "'Courier New', monospace", fontSize: "0.92rem", color: "#2F4858", letterSpacing: "0.02em", lineHeight: 1.8 }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: "0.92rem", color: "#2F4858", letterSpacing: "0.02em", lineHeight: 1.8 }}>
               Sign in to manage your garage records and service follow-up.
             </p>
           </div>
@@ -319,7 +319,7 @@ export default function LoginPage() {
                   color: "#047857",
                   padding: "0.85rem 1rem",
                   borderRadius: "2px",
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: "0.72rem",
                   lineHeight: 1.6,
                 }}
@@ -336,7 +336,7 @@ export default function LoginPage() {
                   color: "#b91c1c",
                   padding: "0.85rem 1rem",
                   borderRadius: "2px",
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: "0.72rem",
                   lineHeight: 1.6,
                 }}
@@ -375,7 +375,7 @@ export default function LoginPage() {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: "0.75rem",
                   letterSpacing: "0.1em",
                   color: "#2F4858",
@@ -414,13 +414,13 @@ export default function LoginPage() {
                     </svg>
                   ) : null}
                 </div>
-                <span style={{ fontFamily: "'Courier New', monospace", fontSize: "0.875rem", letterSpacing: "0.05em", color: "#2F4858", userSelect: "none" }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: "0.875rem", letterSpacing: "0.05em", color: "#2F4858", userSelect: "none" }}>
                   Remember me
                 </span>
               </label>
               <span
                 style={{
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: 'var(--font-sans)',
                   fontSize: "0.875rem",
                   letterSpacing: "0.05em",
                   color: "#2F4858",
@@ -440,7 +440,7 @@ export default function LoginPage() {
                 background: loading ? "rgba(47,72,88,0.7)" : "#2F4858",
                 color: "#fff",
                 border: "none",
-                fontFamily: "'Courier New', monospace",
+                fontFamily: 'var(--font-sans)',
                 fontSize: "0.72rem",
                 letterSpacing: "0.28em",
                 textTransform: "uppercase",
@@ -467,7 +467,7 @@ export default function LoginPage() {
               {loading ? "Signing In..." : "Sign In"}
             </button>
 
-            <p style={{ textAlign: "center", fontFamily: "'Courier New', monospace", fontSize: "0.875rem", color: "#2F4858", letterSpacing: "0.03em", marginTop: "0.5rem" }}>
+            <p style={{ textAlign: "center", fontFamily: 'var(--font-sans)', fontSize: "0.875rem", color: "#2F4858", letterSpacing: "0.03em", marginTop: "0.5rem" }}>
               Don&apos;t have an account?{" "}
               <Link
                 to="/register-garage-admin"

@@ -12,6 +12,10 @@ import MechanicDetails from './pages/MechanicDetails';
 import ServiceRequests from './pages/ServiceRequests';
 import Reports from './pages/Reports';
 import Revenue from './pages/Revenue';
+import Resellers from './pages/Resellers';
+import ResellerDetails from './pages/ResellerDetails';
+import ResellerPayouts from './pages/ResellerPayouts';
+import DataMatrix from './pages/DataMatrix';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import RegisterGarageAdmin from './pages/RegisterGarageAdmin';
@@ -20,6 +24,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import DashboardLayout from './components/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRoute from './components/RoleRoute';
+import EnvironmentBanner from './components/EnvironmentBanner';
 import { authUtils } from './utils/auth';
 import './App.css';
 
@@ -29,6 +34,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <EnvironmentBanner />
       <Routes>
         <Route
           path="/"
@@ -155,6 +161,38 @@ function App() {
             element={
               <RoleRoute allowed={['super_admin']}>
                 <Revenue />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="resellers"
+            element={
+              <RoleRoute allowed={['super_admin']}>
+                <Resellers />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="resellers/:id"
+            element={
+              <RoleRoute allowed={['super_admin']}>
+                <ResellerDetails />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="reseller-payouts"
+            element={
+              <RoleRoute allowed={['super_admin']}>
+                <ResellerPayouts />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="app-code"
+            element={
+              <RoleRoute allowed={['super_admin']}>
+                <DataMatrix />
               </RoleRoute>
             }
           />

@@ -15,6 +15,7 @@ class Commands {
             'SEARCH_USER',
             'DELETE_USER_WITH_DETAILS',
             'CREATE_GARAGE_ADMIN',
+            'CREATE_GARAGE_ACCOUNT',
             'LIST_PENDING_GARAGE_ADMINS',
             'APPROVE_GARAGE_ADMIN',
             'REJECT_GARAGE_ADMIN',
@@ -34,6 +35,9 @@ class Commands {
             'CREATE_GARAGE',
             'LIST_GARAGES',
             'GARAGE_REGISTER_VEHICLE',
+            'TRANSFER_VEHICLE',
+            'LIST_VEHICLE_TRANSFERS',
+            'RUN_OIL_CHANGE_REMINDERS',
             'FIND_VEHICLE_BY_LICENSE',
             'GARAGE_DASHBOARD_STATS',
             'REVENUE_REPORT',
@@ -90,6 +94,22 @@ class Commands {
             // Upload
             'UPLOAD_SINGLE',
             'UPLOAD_MULTIPLE',
+
+            // Resellers
+            'CREATE_RESELLER',
+            'LIST_RESELLERS',
+            'GET_RESELLER',
+            'UPDATE_RESELLER',
+            'SET_GARAGE_RESELLER',
+            'LIST_RESELLER_PAYOUTS',
+            'APPROVE_RESELLER_PAYOUT',
+            'REJECT_RESELLER_PAYOUT',
+            'MARK_RESELLER_PAYOUT_PAID',
+            'RESELLER_DASHBOARD',
+            'LIST_MY_RESELLER_COMMISSIONS',
+            'LIST_MY_RESELLER_PAYOUTS',
+            'REQUEST_RESELLER_PAYOUT',
+            'CANCEL_RESELLER_PAYOUT',
         ];
         return this.cmd;
     }
@@ -107,6 +127,7 @@ class Commands {
         cmd['SEARCH_USER'] = {model: 'User', method: 'searchUser', return: 'promise'};
         cmd['DELETE_USER_WITH_DETAILS'] = {model: 'User', method: 'deleteUserWhithAllDetails', return: 'promise'};
         cmd['CREATE_GARAGE_ADMIN'] = {model: 'User', method: 'createGarageAdmin', return: 'promise'};
+        cmd['CREATE_GARAGE_ACCOUNT'] = {model: 'User', method: 'createGarageAccount', return: 'promise'};
         cmd['LIST_PENDING_GARAGE_ADMINS'] = {model: 'User', method: 'listPendingGarageAdmins', return: 'promise'};
         cmd['APPROVE_GARAGE_ADMIN'] = {model: 'User', method: 'approveGarageAdmin', return: 'promise'};
         cmd['REJECT_GARAGE_ADMIN'] = {model: 'User', method: 'rejectGarageAdmin', return: 'promise'};
@@ -126,6 +147,9 @@ class Commands {
         cmd['CREATE_GARAGE'] = {model: 'Garage', method: 'createGarage', return: 'promise'};
         cmd['LIST_GARAGES'] = {model: 'Garage', method: 'listGarages', return: 'promise'};
         cmd['GARAGE_REGISTER_VEHICLE'] = {model: 'Garage', method: 'registerVehicle', return: 'promise'};
+        cmd['TRANSFER_VEHICLE'] = {model: 'VehicleTransfer', method: 'transferVehicle', return: 'promise'};
+        cmd['LIST_VEHICLE_TRANSFERS'] = {model: 'VehicleTransfer', method: 'listForVehicle', return: 'promise'};
+        cmd['RUN_OIL_CHANGE_REMINDERS'] = {model: 'OilChangeReminder', method: 'runNow', return: 'promise'};
         cmd['FIND_VEHICLE_BY_LICENSE'] = {model: 'Garage', method: 'findVehicleByLicensePlate', return: 'promise'};
         cmd['GARAGE_DASHBOARD_STATS'] = {model: 'GarageDashboard', method: 'getDashboardStats', return: 'promise'};
         cmd['REVENUE_REPORT'] = {model: 'RevenueReport', method: 'getRevenueReport', return: 'promise'};
@@ -182,6 +206,22 @@ class Commands {
         // Upload
         cmd['UPLOAD_SINGLE'] = {model: 'Upload', method: 'uploadFile', return: 'promise', passReqRes: true};
         cmd['UPLOAD_MULTIPLE'] = {model: 'Upload', method: 'uploadMultiple', return: 'promise', passReqRes: true};
+
+        // Resellers
+        cmd['CREATE_RESELLER'] = {model: 'Reseller', method: 'createReseller', return: 'promise'};
+        cmd['LIST_RESELLERS'] = {model: 'Reseller', method: 'listResellers', return: 'promise'};
+        cmd['GET_RESELLER'] = {model: 'Reseller', method: 'getReseller', return: 'promise'};
+        cmd['UPDATE_RESELLER'] = {model: 'Reseller', method: 'updateReseller', return: 'promise'};
+        cmd['SET_GARAGE_RESELLER'] = {model: 'Reseller', method: 'setGarageReseller', return: 'promise'};
+        cmd['LIST_RESELLER_PAYOUTS'] = {model: 'Reseller', method: 'listPayouts', return: 'promise'};
+        cmd['APPROVE_RESELLER_PAYOUT'] = {model: 'Reseller', method: 'approvePayout', return: 'promise'};
+        cmd['REJECT_RESELLER_PAYOUT'] = {model: 'Reseller', method: 'rejectPayout', return: 'promise'};
+        cmd['MARK_RESELLER_PAYOUT_PAID'] = {model: 'Reseller', method: 'markPayoutPaid', return: 'promise'};
+        cmd['RESELLER_DASHBOARD'] = {model: 'Reseller', method: 'getMyDashboard', return: 'promise'};
+        cmd['LIST_MY_RESELLER_COMMISSIONS'] = {model: 'Reseller', method: 'listMyCommissions', return: 'promise'};
+        cmd['LIST_MY_RESELLER_PAYOUTS'] = {model: 'Reseller', method: 'listMyPayouts', return: 'promise'};
+        cmd['REQUEST_RESELLER_PAYOUT'] = {model: 'Reseller', method: 'requestPayout', return: 'promise'};
+        cmd['CANCEL_RESELLER_PAYOUT'] = {model: 'Reseller', method: 'cancelMyPayout', return: 'promise'};
 
         return cmd;
     }

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { COUNTRIES, ID_DOCUMENT } from '../utils/countries';
 
 const RegisterGarageAdmin = () => {
   const navigate = useNavigate();
@@ -22,12 +23,8 @@ const RegisterGarageAdmin = () => {
     garage_registration_number: '',
   });
 
-  const requiredDocs = [
-    { type: 'business_license', label: 'Business License' },
-    { type: 'registration_certificate', label: 'Registration Certificate' },
-    { type: 'tax_clearance', label: 'Tax Clearance' },
-    { type: 'insurance', label: 'Insurance' },
-  ];
+  // Only the owner's ID is required to register.
+  const requiredDocs = [ID_DOCUMENT];
   const registrationSteps = [
     {
       id: 1,
@@ -42,7 +39,7 @@ const RegisterGarageAdmin = () => {
     {
       id: 3,
       label: 'Documents',
-      description: 'Upload the required business verification files.',
+      description: 'Upload your ID document (National ID or Passport).',
     },
   ];
 
@@ -80,7 +77,7 @@ const RegisterGarageAdmin = () => {
     }
     const missingDocs = documents.filter((doc) => !doc.url);
     if (missingDocs.length > 0) {
-      setError('All required business documents must be uploaded.');
+      setError('Please upload your ID document.');
       return;
     }
 
@@ -409,12 +406,11 @@ const RegisterGarageAdmin = () => {
                         onChange={(e) => setFormData({ ...formData, garage_country: e.target.value })}
                         className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-800 transition-all focus:border-[#FEA14C] focus:outline-none focus:ring-4 focus:ring-[#FEA14C]/10"
                       >
-                        <option value="Rwanda">Rwanda</option>
-                        <option value="Burundi">Burundi</option>
-                        <option value="Uganda">Uganda</option>
-                        <option value="Tanzania">Tanzania</option>
-                        <option value="Kenya">Kenya</option>
-                        <option value="Democratic Republic of Congo">Democratic Republic of Congo</option>
+                        {COUNTRIES.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -424,7 +420,7 @@ const RegisterGarageAdmin = () => {
               {step === 3 && (
                 <div>
                   <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-[#2F4858]">
-                    Business Documents
+                    ID Document
                   </h2>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {documents.map((doc, index) => (
