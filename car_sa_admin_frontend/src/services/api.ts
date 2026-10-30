@@ -317,6 +317,7 @@ class ApiService {
     phone?: string;
     gender?: string;
     date_of_birth?: string;
+    referral_code?: string;
     garage: {
       name: string;
       address?: string;

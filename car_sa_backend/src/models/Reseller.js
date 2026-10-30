@@ -161,9 +161,16 @@ async function getBalance(resellerUserId, options) {
     return balances.get(Number(resellerUserId)) || emptyBalance();
 }
 
+/** Link a reseller shares: opens the web "Join CarSa" page with their code filled in. Null until PUBLIC_WEB_URL is set. */
+function referralLink(code) {
+    const base = String(process.env.PUBLIC_WEB_URL || '').trim().replace(/\/+$/, '');
+    return base ? `${base}/join?ref=${encodeURIComponent(code)}` : null;
+}
+
 function serializeProfile(profile) {
     return {
         referral_code: profile.referral_code,
+        referral_link: referralLink(profile.referral_code),
         commission_type: profile.commission_type,
         commission_value: Number(profile.commission_value),
     };

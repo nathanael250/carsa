@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api, { type ResellerDetailsData } from '../services/api';
 import { PayoutActions, PayoutStatusBadge, ResellerFormModal } from '../components/ResellerUi';
 import { formatCommission, formatDateTime, formatMoney, formatPayoutMethod } from '../utils/resellerFormat';
+import { referralJoinLink } from '../utils/referral';
 
 type GarageOption = { id: number; name: string; city?: string | null; owner?: { name?: string } | null };
 
@@ -19,6 +20,7 @@ const ResellerDetails = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Sets state only after the request finishes, so it can run straight from an effect.
   const load = useCallback(async () => {
@@ -82,6 +84,17 @@ const ResellerDetails = () => {
     if (!garageId) return;
     if (!window.confirm(`Remove ${garageName || 'this garage'} from this reseller? Future payments will not earn commission.`)) return;
     runAction(() => api.setGarageReseller(garageId, null));
+  };
+
+  const copyLink = async () => {
+    if (!reseller) return;
+    try {
+      await navigator.clipboard.writeText(referralJoinLink(reseller.referral_code));
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 1500);
+    } catch {
+      setLinkCopied(false);
+    }
   };
 
   const copyCode = async () => {
@@ -154,6 +167,13 @@ const ResellerDetails = () => {
               </span>
               <button onClick={copyCode} className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">
                 {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 max-w-full">
+              <span className="text-xs uppercase text-gray-500 shrink-0">Share link</span>
+              <span className="text-xs text-gray-800 truncate max-w-[16rem]">{referralJoinLink(reseller.referral_code)}</span>
+              <button onClick={copyLink} className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 shrink-0">
+                {linkCopied ? 'Copied' : 'Copy link'}
               </button>
             </div>
             <div className="flex gap-2">

@@ -133,6 +133,7 @@ commission setting: a percentage of the service payment, or a fixed RWF amount p
 - `TRANSPIP_TENANT_API_KEY` (required for service payment collections)
 - `TRANSPIP_PAYMENT_TIMEOUT_MS` (optional; defaults to `15000`)
 - `TRANSPIP_WEBHOOK_SECRET` (optional; if set, TransPip webhooks must send it as `x-webhook-secret`, `x-transpip-webhook-secret`, or `?token=...`)
+- `PUBLIC_WEB_URL` (public address of the web panel, e.g. `https://carsa.example.com`; resellers share `PUBLIC_WEB_URL/join?ref=CODE`)
 - `RESELLER_MIN_PAYOUT` (optional; smallest payout a reseller can request in RWF, defaults to `1000`)
 - `APP_ENV` (optional; `testing` or `production` loads `.env.testing` / `.env.production`; see `docs/environments.md`)
 - `OIL_REMINDERS_ENABLED` (optional; `false` turns off automatic oil change reminders, default on)

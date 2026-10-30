@@ -1,10 +1,18 @@
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { COUNTRIES, ID_DOCUMENT } from '../utils/countries';
+import { parseReferralCode, rememberReferralCode, rememberedReferralCode } from '../utils/referral';
 
 const RegisterGarageAdmin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // From a reseller's link (?ref=CODE), or remembered from the Join page.
+  const [referralCode, setReferralCode] = useState(() => {
+    const fromUrl = parseReferralCode(searchParams.get('ref'));
+    if (fromUrl) rememberReferralCode(fromUrl);
+    return fromUrl || rememberedReferralCode() || '';
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState(1);
@@ -91,6 +99,7 @@ const RegisterGarageAdmin = () => {
         phone: formData.phone.trim() || undefined,
         gender: formData.gender.trim() || undefined,
         date_of_birth: formData.date_of_birth || undefined,
+        referral_code: referralCode.trim() || undefined,
         garage: {
           name: formData.garage_name.trim(),
           address: formData.garage_address.trim() || undefined,
@@ -290,6 +299,17 @@ const RegisterGarageAdmin = () => {
                   <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-[#2F4858]">
                     Account Details
                   </h2>
+                  <div className="mb-5 rounded-xl border border-[#FEA14C]/40 bg-[#FEA14C]/10 p-4">
+                    <label className="block text-sm font-semibold text-[#2F4858]">Referral code (optional)</label>
+                    <input
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="e.g. RSK7P2QX"
+                      className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm font-mono tracking-wider text-slate-800 transition-all focus:border-[#FEA14C] focus:outline-none focus:ring-4 focus:ring-[#FEA14C]/10"
+                    />
+                    <p className="mt-1 text-xs text-slate-600">Got a code from a CarSa partner? Enter it here.</p>
+                  </div>
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium text-slate-600">Name</label>

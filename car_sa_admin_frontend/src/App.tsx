@@ -16,6 +16,7 @@ import Resellers from './pages/Resellers';
 import ResellerDetails from './pages/ResellerDetails';
 import ResellerPayouts from './pages/ResellerPayouts';
 import DataMatrix from './pages/DataMatrix';
+import JoinReferral from './pages/JoinReferral';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import RegisterGarageAdmin from './pages/RegisterGarageAdmin';
@@ -57,6 +58,7 @@ function App() {
           }
         />
         <Route path="/register-garage-admin" element={<RegisterGarageAdmin />} />
+        <Route path="/join" element={<JoinReferral />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/verify-garage-admin-email" element={<Navigate to="/login" replace />} />
         <Route
