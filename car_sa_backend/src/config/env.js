@@ -5,7 +5,8 @@
  *   APP_ENV=production  -> .env.production (live database)
  *   APP_ENV not set     -> .env only (unchanged behaviour)
  *
- * `.env` is always read last as a fallback; values already set are never overridden.
+ * An environment reads only its own file, never `.env`: otherwise a testing server
+ * could silently pick up live payment keys for any setting missing from .env.testing.
  */
 const fs = require('fs');
 const path = require('path');
@@ -20,8 +21,9 @@ if (APP_ENV) {
         throw new Error(`APP_ENV is "${APP_ENV}" but ${envFile} does not exist. Copy .env.${APP_ENV}.example and fill it in.`);
     }
     dotenv.config({path: envFile, quiet: true});
+} else {
+    dotenv.config({path: path.join(ROOT, '.env'), quiet: true});
 }
-dotenv.config({path: path.join(ROOT, '.env'), quiet: true});
 
 const environment = APP_ENV || process.env.NODE_ENV || 'production';
 

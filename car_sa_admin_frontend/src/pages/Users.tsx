@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import api from '../services/api';
 
 interface User {
@@ -8,7 +9,7 @@ interface User {
   phone: string | null;
   date_of_birth: string | null;
   gender: string | null;
-  role: 'super_admin' | 'garage_admin' | 'service_technician' | 'car_owner';
+  role: 'super_admin' | 'garage_admin' | 'service_technician' | 'car_owner' | 'reseller';
   email_verified: boolean;
   created_at?: string;
   updated_at?: string;
@@ -25,6 +26,18 @@ interface User {
   };
 }
 
+const roleLabels: Record<User['role'], string> = {
+  super_admin: 'Super Admin',
+  garage_admin: 'Garage Admin',
+  service_technician: 'Worker',
+  car_owner: 'Car Owner',
+  reseller: 'Reseller',
+};
+
+const showResetDialog = (dialog: HTMLDialogElement | null) => {
+  if (dialog && !dialog.open) dialog.showModal();
+};
+
 const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +47,10 @@ const Users = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [filterRole, setFilterRole] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [resetUser, setResetUser] = useState<User | null>(null);
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [resetPending, setResetPending] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -60,6 +77,34 @@ const Users = () => {
   const handleViewDetails = (user: User) => {
     setSelectedUser(user);
     setShowDetailsModal(true);
+  };
+
+  const handlePasswordReset = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!resetUser || resetPending) return;
+
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get('new_password') ?? '');
+    if (password !== form.get('confirm_password')) {
+      setResetError('Passwords do not match.');
+      return;
+    }
+
+    setResetError('');
+    setResetPending(true);
+    try {
+      const response = await api.resetUserPassword(resetUser.id, password);
+      if (response.error) {
+        setResetError(response.error);
+        return;
+      }
+      setResetSuccess(`Password reset for ${resetUser.email}.`);
+      setResetUser(null);
+    } catch {
+      setResetError('Failed to reset password.');
+    } finally {
+      setResetPending(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -130,6 +175,12 @@ const Users = () => {
         <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
           <p className="text-sm text-red-600">{error}</p>
         </div>
+      )}
+
+      {resetSuccess && (
+        <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          {resetSuccess}
+        </p>
       )}
 
       {/* Filters and Search */}
@@ -294,13 +345,7 @@ const Users = () => {
                           user.role
                         )}`}
                       >
-                        {user.role === 'super_admin'
-                          ? 'Super Admin'
-                          : user.role === 'garage_admin'
-                          ? 'Garage Admin'
-                          : user.role === 'service_technician'
-                          ? 'Worker'
-                          : 'Car Owner'}
+                        {roleLabels[user.role]}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -348,6 +393,18 @@ const Users = () => {
                               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                             />
                           </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResetError('');
+                            setResetSuccess('');
+                            setResetUser(user);
+                          }}
+                          aria-label={`Reset password for ${user.email}`}
+                          className="rounded px-2 py-1 text-[#2F4858] hover:bg-gray-100"
+                        >
+                          Reset password
                         </button>
                         {user.role !== 'super_admin' && (
                           <button
@@ -432,13 +489,7 @@ const Users = () => {
                           selectedUser.role
                         )}`}
                       >
-                        {selectedUser.role === 'super_admin'
-                          ? 'Super Admin'
-                          : selectedUser.role === 'garage_admin'
-                          ? 'Garage Admin'
-                          : selectedUser.role === 'service_technician'
-                          ? 'Worker'
-                          : 'Car Owner'}
+                        {roleLabels[selectedUser.role]}
                       </span>
                     </p>
                   </div>
@@ -539,6 +590,67 @@ const Users = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {resetUser && (
+        <dialog
+          ref={showResetDialog}
+          aria-labelledby="reset-password-title"
+          onCancel={(event) => {
+            event.preventDefault();
+            if (!resetPending) setResetUser(null);
+          }}
+          className="m-auto w-[calc(100%-2rem)] max-w-md rounded-lg bg-white p-6 shadow-xl backdrop:bg-black/25"
+        >
+          <h2 id="reset-password-title" className="text-lg font-bold text-gray-900">Reset password</h2>
+          <p className="mt-2 break-words text-sm text-gray-600">
+            Set a new password for {resetUser.name} ({resetUser.email}).
+          </p>
+          <form onSubmit={handlePasswordReset} className="mt-4 space-y-4">
+            <label className="block text-sm font-medium text-gray-700">
+              New password (at least 6 characters)
+              <input
+                type="password"
+                name="new_password"
+                autoComplete="new-password"
+                autoFocus
+                minLength={6}
+                required
+                disabled={resetPending}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm font-medium text-gray-700">
+              Confirm new password
+              <input
+                type="password"
+                name="confirm_password"
+                autoComplete="new-password"
+                required
+                disabled={resetPending}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2"
+              />
+            </label>
+            {resetError && <p role="alert" className="text-sm text-red-700">{resetError}</p>}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setResetUser(null)}
+                disabled={resetPending}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={resetPending}
+                className="rounded-lg bg-[#2F4858] px-4 py-2 text-white disabled:opacity-50"
+              >
+                {resetPending ? 'Resetting…' : 'Reset password'}
+              </button>
+            </div>
+          </form>
+        </dialog>
       )}
 
       {/* Delete Confirmation Modal */}

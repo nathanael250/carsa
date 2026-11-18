@@ -59,6 +59,7 @@ function App() {
         />
         <Route path="/register-garage-admin" element={<RegisterGarageAdmin />} />
         <Route path="/join" element={<JoinReferral />} />
+        <Route path="/join/:code" element={<JoinReferral />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/verify-garage-admin-email" element={<Navigate to="/login" replace />} />
         <Route

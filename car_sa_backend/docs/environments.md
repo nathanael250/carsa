@@ -11,19 +11,23 @@ CarSa runs as two completely separate copies, so testing never touches live data
 | Admin panel | testing build, red "Test environment" badge | normal build |
 | Mobile app | testing build, red "TEST" corner banner | Play Store build |
 
-## 1. Create the test database (once)
+## 1. Create the test database and test accounts
 
-On the database server:
+1. Copy `.env.testing.example` to `.env.testing` and fill in the database login. Keep `DB_NAME=carsa_test`,
+   and use a new `JWT_SECRET`. Leave the payment keys empty or use sandbox keys.
+2. Run:
 
-```sql
-CREATE DATABASE carsa_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'carsa_test'@'%' IDENTIFIED BY 'choose-a-strong-password';
-GRANT ALL PRIVILEGES ON carsa_test.* TO 'carsa_test'@'%';
+```bash
+npm run db:seed:testing
 ```
 
-The tables are created automatically the first time the testing backend starts.
-To start testing with realistic data, you can copy the live database into it (`mysqldump car_sa | mysql carsa_test`),
-but remember it then contains real customers' details.
+This creates the database if it's missing, its tables, and test data: one account for every role, two cars,
+service types, an oil product, a paid service and a reseller with referral code `RSTEST01`.
+The accounts and password are written to `testing-accounts.txt` (ignored by git).
+
+It's safe to run again; a new password is generated each time unless `TEST_USERS_PASSWORD` is set in `.env.testing`.
+It refuses to run unless `DB_NAME` contains `test`. The database login needs permission to create databases;
+if yours doesn't have it, create the empty database first.
 
 ## 2. Backend
 
@@ -41,6 +45,8 @@ Safety: the testing server **refuses to start** if its `DB_NAME` does not contai
 Check which one you reached with `GET /health` — it answers `{"status":"ok","environment":"testing"}`.
 
 Without `APP_ENV`, the server reads `.env` exactly as before, so the current live server keeps working unchanged.
+With `APP_ENV` set, it reads **only** that environment's file and never `.env`, so testing can't pick up live keys.
+Every setting must therefore be in `.env.testing` / `.env.production`.
 
 ## 3. Admin panel
 

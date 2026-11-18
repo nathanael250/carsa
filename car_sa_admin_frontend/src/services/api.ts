@@ -205,11 +205,7 @@ class ApiService {
       }
 
       if (!response.ok) {
-        // Keep this log for fast backend debugging in dev tools.
-        console.error(`[API:${command}] ${response.status}`, {
-          payload,
-          response: data,
-        });
+        console.error(`[API:${command}] ${response.status}`, data);
         return {
           error: data.error || data.message || `Request failed with status ${response.status} (${command})`,
         };
@@ -484,6 +480,13 @@ class ApiService {
   }) {
     return this.requestCommand<{ garage: any; documents_count: number; message: string }>('CREATE_GARAGE', {
       body: payload,
+    });
+  }
+
+  async resetUserPassword(id: number, new_password: string) {
+    return this.requestCommand<{ message: string }>('RESET_USER_PASSWORD', {
+      body: { new_password },
+      params: { id },
     });
   }
 

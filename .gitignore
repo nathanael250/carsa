@@ -7,3 +7,6 @@ car_sa_admin_frontend/.env.*
 !car_sa_admin_frontend/.env.*.example
 piper-car-sa-designs/env/*.json
 !piper-car-sa-designs/env/*.example.json
+
+# Written by the testing seed script; holds test account passwords
+car_sa_backend/testing-accounts.txt

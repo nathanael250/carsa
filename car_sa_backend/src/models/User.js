@@ -446,13 +446,17 @@ User.getRegisterdUserWithAllDetails = async () => {
 };
 
 User.searchUser = async ({body}) => {
-    const {email, phone} = body || {};
+    const {email, phone, role} = body || {};
 
     if (!email && !phone) {
         throw createHttpError('Email or phone is required', 400);
     }
 
     const where = {};
+    // Optional: only look among one type of account (the vehicle transfer searches car owners only).
+    if (role) {
+        where.role = String(role);
+    }
     if (email) {
         where.email = email.trim().toLowerCase();
     }
@@ -1036,6 +1040,36 @@ User.setMechanicStatus = async ({params, body, user}) => {
                 active: mechanic.active,
             },
         },
+    };
+};
+
+User.resetUserPassword = async ({params, body, user}) => {
+    if (user?.role !== 'super_admin') {
+        throw createHttpError('Only super admins can reset user passwords', 403);
+    }
+
+    const id = params?.id;
+    if (!Number.isSafeInteger(id) || id < 1) {
+        throw createHttpError('A valid user ID is required', 400);
+    }
+
+    const {new_password} = body || {};
+    if (typeof new_password !== 'string' || new_password.length < 6 || !new_password.trim()) {
+        throw createHttpError('New password must be at least 6 characters and cannot be blank', 400);
+    }
+    if (Buffer.byteLength(new_password, 'utf8') > 72) {
+        throw createHttpError('New password must be at most 72 bytes', 400);
+    }
+
+    const password_hash = await bcrypt.hash(new_password, 10);
+    const [updated] = await User.update({password_hash}, {where: {id}});
+    if (!updated) {
+        throw createHttpError('User not found', 404);
+    }
+
+    return {
+        status: 200,
+        data: {message: 'Password reset successfully'},
     };
 };
 

@@ -1,4 +1,4 @@
-/** Reseller referral codes in links: `/join?ref=RSXXXXXX`. */
+/** Reseller referral codes in links: `/join/RSXXXXXX`. */
 const STORAGE_KEY = 'carsa_referral_code';
 const CODE_PATTERN = /RS[A-Z0-9]{6}/;
 
@@ -29,7 +29,7 @@ export const rememberedReferralCode = (): string | null => {
 };
 
 /** The link a reseller shares. */
-export const referralJoinLink = (code: string) => `${window.location.origin}/join?ref=${encodeURIComponent(code)}`;
+export const referralJoinLink = (code: string) => `${window.location.origin}/join/${encodeURIComponent(code)}`;
 
 /** Play Store link that hands the code to the app after install (Android "install referrer"). */
 export const playStoreLinkWithCode = (code: string) =>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import logo from '../assets/carsa.png';
 import {
   parseReferralCode,
@@ -10,15 +10,16 @@ import {
 } from '../utils/referral';
 
 /**
- * Public page behind a reseller's share link (`/join?ref=RSXXXXXX`).
+ * Public page behind a reseller's share link (`/join/RSXXXXXX`; `/join?ref=RSXXXXXX` also works).
  * Garages register on the web with the code filled in, or install the app;
  * the Play Store passes the code to the app so the sign-up form fills it in too.
  */
 const JoinReferral = () => {
+  const params = useParams();
   const [searchParams] = useSearchParams();
   const code = useMemo(
-    () => parseReferralCode(searchParams.get('ref')) || rememberedReferralCode(),
-    [searchParams]
+    () => parseReferralCode(params.code) || parseReferralCode(searchParams.get('ref')) || rememberedReferralCode(),
+    [params.code, searchParams]
   );
   const [copied, setCopied] = useState(false);
 

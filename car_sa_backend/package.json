@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "start:testing": "APP_ENV=testing node src/server.js",
     "start:production": "APP_ENV=production node src/server.js",
-    "dev:testing": "APP_ENV=testing nodemon src/server.js"
+    "dev:testing": "APP_ENV=testing nodemon src/server.js",
+    "db:seed:testing": "APP_ENV=testing node scripts/seed-testing-db.js"
   },
   "keywords": [],
   "author": "",

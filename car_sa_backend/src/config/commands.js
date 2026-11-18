@@ -13,6 +13,7 @@ class Commands {
             'LIST_USERS',
             'LIST_USERS_WITH_DETAILS',
             'SEARCH_USER',
+            'RESET_USER_PASSWORD',
             'DELETE_USER_WITH_DETAILS',
             'CREATE_GARAGE_ADMIN',
             'CREATE_GARAGE_ACCOUNT',
@@ -125,6 +126,7 @@ class Commands {
         cmd['LIST_USERS'] = {model: 'User', method: 'selectUsers', return: 'promise'};
         cmd['LIST_USERS_WITH_DETAILS'] = {model: 'User', method: 'getRegisterdUserWithAllDetails', return: 'promise'};
         cmd['SEARCH_USER'] = {model: 'User', method: 'searchUser', return: 'promise'};
+        cmd['RESET_USER_PASSWORD'] = {model: 'User', method: 'resetUserPassword', return: 'promise'};
         cmd['DELETE_USER_WITH_DETAILS'] = {model: 'User', method: 'deleteUserWhithAllDetails', return: 'promise'};
         cmd['CREATE_GARAGE_ADMIN'] = {model: 'User', method: 'createGarageAdmin', return: 'promise'};
         cmd['CREATE_GARAGE_ACCOUNT'] = {model: 'User', method: 'createGarageAccount', return: 'promise'};

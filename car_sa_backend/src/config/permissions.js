@@ -15,6 +15,7 @@ const COMMAND_PERMISSIONS = {
     // Super Admin only
     LIST_USERS: ['super_admin'],
     LIST_USERS_WITH_DETAILS: ['super_admin'],
+    RESET_USER_PASSWORD: ['super_admin'],
     DELETE_USER_WITH_DETAILS: ['super_admin'],
     CREATE_SERVICE_CATALOG: ['super_admin'],
     UPDATE_SERVICE_CATALOG: ['super_admin'],
